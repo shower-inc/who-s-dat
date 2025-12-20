@@ -112,7 +112,7 @@ export interface Database {
           buffer_update_id: string | null
           scheduled_at: string | null
           posted_at: string | null
-          status: 'draft' | 'scheduled' | 'posted' | 'failed' | 'cancelled'
+          status: 'draft' | 'ready' | 'scheduled' | 'posted' | 'failed' | 'cancelled'
           error_message: string | null
           created_at: string
           updated_at: string
