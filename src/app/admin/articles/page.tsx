@@ -14,7 +14,7 @@ export default async function ArticlesPage() {
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">Articles</h1>
+        <h1 className="text-3xl font-bold text-white">記事一覧</h1>
       </div>
 
       <ArticleList articles={articles ?? []} />

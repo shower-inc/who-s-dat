@@ -20,6 +20,18 @@ const statusColors: Record<string, string> = {
   error: 'bg-red-900 text-red-300',
 }
 
+const statusLabels: Record<string, string> = {
+  pending: '未処理',
+  translating: '翻訳中',
+  translated: '翻訳済',
+  generating: '生成中',
+  ready: '準備完了',
+  scheduled: '予約済',
+  posted: '投稿済',
+  skipped: 'スキップ',
+  error: 'エラー',
+}
+
 export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
@@ -33,7 +45,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
         alert(`Error: ${data.error}`)
       }
     } catch {
-      alert('Translation failed')
+      alert('翻訳に失敗しました')
     }
     router.refresh()
     setLoading(null)
@@ -47,10 +59,10 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
       if (data.error) {
         alert(`Error: ${data.error}`)
       } else {
-        alert('Post generated!')
+        alert('投稿文を生成しました！')
       }
     } catch {
-      alert('Generation failed')
+      alert('投稿文の生成に失敗しました')
     }
     router.refresh()
     setLoading(null)
@@ -59,7 +71,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
   if (articles.length === 0) {
     return (
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
-        <p className="text-gray-400">No articles yet. Fetch some sources first!</p>
+        <p className="text-gray-400">まだ記事がありません。先にソースから取得してください！</p>
       </div>
     )
   }
@@ -95,7 +107,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
                   </p>
                 </div>
                 <span className={`px-2 py-1 text-xs rounded whitespace-nowrap ${statusColors[article.status] || 'bg-gray-700 text-gray-300'}`}>
-                  {article.status}
+                  {statusLabels[article.status] || article.status}
                 </span>
               </div>
 
@@ -106,7 +118,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
                     disabled={loading === article.id}
                     className="px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors"
                   >
-                    {loading === article.id ? 'Translating...' : 'Translate'}
+                    {loading === article.id ? '翻訳中...' : '翻訳する'}
                   </button>
                 )}
                 {article.status === 'translated' && (
@@ -115,7 +127,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
                     disabled={loading === article.id}
                     className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded transition-colors"
                   >
-                    {loading === article.id ? 'Generating...' : 'Generate Post'}
+                    {loading === article.id ? '生成中...' : '投稿文を生成'}
                   </button>
                 )}
                 <a
@@ -124,7 +136,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
                   rel="noopener noreferrer"
                   className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
                 >
-                  View Original
+                  元記事を見る
                 </a>
               </div>
             </div>

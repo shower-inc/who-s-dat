@@ -14,7 +14,7 @@ export default async function PostsPage() {
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">Posts</h1>
+        <h1 className="text-3xl font-bold text-white">投稿管理</h1>
       </div>
 
       <PostList posts={posts ?? []} />

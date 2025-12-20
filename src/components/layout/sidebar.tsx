@@ -6,11 +6,11 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 const navItems = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/admin/sources', label: 'Sources', icon: '📡' },
-  { href: '/admin/articles', label: 'Articles', icon: '📰' },
-  { href: '/admin/posts', label: 'Posts', icon: '📤' },
-  { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/admin/dashboard', label: 'ダッシュボード', icon: '📊' },
+  { href: '/admin/sources', label: 'ソース管理', icon: '📡' },
+  { href: '/admin/articles', label: '記事一覧', icon: '📰' },
+  { href: '/admin/posts', label: '投稿管理', icon: '📤' },
+  { href: '/admin/settings', label: '設定', icon: '⚙️' },
 ]
 
 export function Sidebar() {
@@ -27,7 +27,7 @@ export function Sidebar() {
     <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
       <div className="p-6">
         <h1 className="text-2xl font-bold text-white">WHO&apos;S DAT</h1>
-        <p className="text-sm text-gray-500 mt-1">Admin Panel</p>
+        <p className="text-sm text-gray-500 mt-1">管理画面</p>
       </div>
 
       <nav className="flex-1 px-4">
@@ -59,7 +59,7 @@ export function Sidebar() {
           className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
         >
           <span>🚪</span>
-          <span>Logout</span>
+          <span>ログアウト</span>
         </button>
       </div>
     </aside>

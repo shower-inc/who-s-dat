@@ -22,6 +22,15 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-gray-700 text-gray-400',
 }
 
+const statusLabels: Record<string, string> = {
+  draft: '下書き',
+  ready: '承認済',
+  scheduled: '予約済',
+  posted: '投稿済',
+  failed: '失敗',
+  cancelled: 'キャンセル',
+}
+
 export function PostList({ posts }: { posts: PostWithArticle[] }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
@@ -36,10 +45,10 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
       if (data.error) {
         alert(`Error: ${data.error}`)
       } else {
-        alert(`Posted to X! Tweet ID: ${data.tweet_id}`)
+        alert(`Xに投稿しました！ Tweet ID: ${data.tweet_id}`)
       }
     } catch {
-      alert('Posting failed')
+      alert('投稿に失敗しました')
     }
     router.refresh()
     setLoading(null)
@@ -56,7 +65,7 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
         alert(`Error: ${data.error}`)
       }
     } catch {
-      alert('Failed to mark as ready')
+      alert('承認処理に失敗しました')
     }
     router.refresh()
     setLoading(null)
@@ -66,7 +75,7 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
   if (posts.length === 0) {
     return (
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
-        <p className="text-gray-400">No posts yet. Generate some from articles!</p>
+        <p className="text-gray-400">まだ投稿がありません。記事から投稿文を生成してください！</p>
       </div>
     )
   }
@@ -85,16 +94,16 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
                 <span>{post.articles?.sources?.name}</span>
                 <span>{post.platform.toUpperCase()}</span>
                 {post.scheduled_at && (
-                  <span>Scheduled: {new Date(post.scheduled_at).toLocaleString()}</span>
+                  <span>予約: {new Date(post.scheduled_at).toLocaleString('ja-JP')}</span>
                 )}
                 {post.posted_at && (
-                  <span>Posted: {new Date(post.posted_at).toLocaleString()}</span>
+                  <span>投稿: {new Date(post.posted_at).toLocaleString('ja-JP')}</span>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className={`px-2 py-1 text-xs rounded ${statusColors[post.status]}`}>
-                {post.status}
+                {statusLabels[post.status] || post.status}
               </span>
             </div>
           </div>
@@ -107,7 +116,7 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
                   disabled={loading === post.id}
                   className="px-3 py-1.5 text-sm bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 text-white rounded transition-colors"
                 >
-                  {loading === post.id && action === 'ready' ? 'Marking...' : 'Approve'}
+                  {loading === post.id && action === 'ready' ? '承認中...' : '承認する'}
                 </button>
               )}
               <button
@@ -115,7 +124,7 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
                 disabled={loading === post.id}
                 className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded transition-colors"
               >
-                {loading === post.id && action === 'posting' ? 'Posting...' : 'Post to X'}
+                {loading === post.id && action === 'posting' ? '投稿中...' : 'Xに投稿'}
               </button>
               {post.articles?.link && (
                 <a
@@ -124,7 +133,7 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
                   rel="noopener noreferrer"
                   className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
                 >
-                  View Original
+                  元記事を見る
                 </a>
               )}
             </div>

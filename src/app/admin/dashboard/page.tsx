@@ -25,10 +25,10 @@ export default async function DashboardPage() {
     .eq('status', 'posted')
 
   const stats = [
-    { label: 'Active Sources', value: sourcesCount ?? 0, icon: '📡' },
-    { label: 'Total Articles', value: articlesCount ?? 0, icon: '📰' },
-    { label: 'Pending', value: pendingCount ?? 0, icon: '⏳' },
-    { label: 'Posted', value: postedCount ?? 0, icon: '✅' },
+    { label: '有効なソース', value: sourcesCount ?? 0, icon: '📡' },
+    { label: '総記事数', value: articlesCount ?? 0, icon: '📰' },
+    { label: '未処理', value: pendingCount ?? 0, icon: '⏳' },
+    { label: '投稿済み', value: postedCount ?? 0, icon: '✅' },
   ]
 
   // 最新の記事
@@ -40,7 +40,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-3xl font-bold text-white mb-8">Dashboard</h1>
+      <h1 className="text-3xl font-bold text-white mb-8">ダッシュボード</h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
 
       {/* Recent Articles */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-xl font-bold text-white mb-4">Recent Articles</h2>
+        <h2 className="text-xl font-bold text-white mb-4">最新の記事</h2>
         {recentArticles && recentArticles.length > 0 ? (
           <ul className="space-y-4">
             {recentArticles.map((article) => (
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-gray-400">No articles yet. Add some sources to get started!</p>
+          <p className="text-gray-400">まだ記事がありません。ソースを追加して取得しましょう！</p>
         )}
       </div>
     </DashboardLayout>

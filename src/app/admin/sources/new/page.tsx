@@ -60,12 +60,12 @@ export default function NewSourcePage() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-3xl font-bold text-white mb-8">Add Source</h1>
+      <h1 className="text-3xl font-bold text-white mb-8">ソース追加</h1>
 
       <form onSubmit={handleSubmit} className="max-w-xl space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Name
+            ソース名
           </label>
           <input
             type="text"
@@ -79,7 +79,7 @@ export default function NewSourcePage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Type
+            タイプ
           </label>
           <select
             value={form.type}
@@ -109,14 +109,14 @@ export default function NewSourcePage() {
           />
           {form.type === 'youtube' && (
             <p className="text-xs text-gray-500 mt-1">
-              Tip: Use YouTube RSS feed URL format
+              ヒント: YouTubeのRSSフィードURL形式を使用してください
             </p>
           )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Category
+            カテゴリ
           </label>
           <select
             value={form.category}
@@ -137,14 +137,14 @@ export default function NewSourcePage() {
             disabled={loading}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-medium rounded-lg transition-colors"
           >
-            {loading ? 'Adding...' : 'Add Source'}
+            {loading ? '追加中...' : 'ソースを追加'}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
             className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
           >
-            Cancel
+            キャンセル
           </button>
         </div>
       </form>

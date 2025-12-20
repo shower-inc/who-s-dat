@@ -14,12 +14,12 @@ export default async function SourcesPage() {
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">Sources</h1>
+        <h1 className="text-3xl font-bold text-white">ソース管理</h1>
         <Link
           href="/admin/sources/new"
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
         >
-          + Add Source
+          + ソース追加
         </Link>
       </div>
 

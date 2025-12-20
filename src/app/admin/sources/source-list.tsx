@@ -21,7 +21,7 @@ export function SourceList({ sources }: { sources: Source[] }) {
   }
 
   const deleteSource = async (source: Source) => {
-    if (!confirm(`Delete "${source.name}"?`)) return
+    if (!confirm(`「${source.name}」を削除しますか？`)) return
     setLoading(source.id)
     await supabase.from('sources').delete().eq('id', source.id)
     router.refresh()
@@ -36,10 +36,10 @@ export function SourceList({ sources }: { sources: Source[] }) {
       if (data.error) {
         alert(`Error: ${data.error}`)
       } else {
-        alert(`Fetched ${data.count} articles`)
+        alert(`${data.count}件の記事を取得しました`)
       }
     } catch (e) {
-      alert('Fetch failed')
+      alert('取得に失敗しました')
     }
     router.refresh()
     setLoading(null)
@@ -48,7 +48,7 @@ export function SourceList({ sources }: { sources: Source[] }) {
   if (sources.length === 0) {
     return (
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
-        <p className="text-gray-400">No sources yet. Add your first RSS or YouTube source!</p>
+        <p className="text-gray-400">まだソースがありません。RSSまたはYouTubeソースを追加しましょう！</p>
       </div>
     )
   }
@@ -76,7 +76,7 @@ export function SourceList({ sources }: { sources: Source[] }) {
               <p className="text-sm text-gray-500 mt-2 truncate max-w-xl">{source.url}</p>
               {source.last_fetched_at && (
                 <p className="text-xs text-gray-600 mt-1">
-                  Last fetched: {new Date(source.last_fetched_at).toLocaleString()}
+                  最終取得: {new Date(source.last_fetched_at).toLocaleString('ja-JP')}
                 </p>
               )}
               {source.fetch_error && (
@@ -90,7 +90,7 @@ export function SourceList({ sources }: { sources: Source[] }) {
                 disabled={loading === source.id}
                 className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded transition-colors"
               >
-                Fetch
+                取得
               </button>
               <button
                 onClick={() => toggleEnabled(source)}
@@ -101,14 +101,14 @@ export function SourceList({ sources }: { sources: Source[] }) {
                     : 'bg-gray-600 hover:bg-gray-500 text-white'
                 }`}
               >
-                {source.enabled ? 'Disable' : 'Enable'}
+                {source.enabled ? '無効化' : '有効化'}
               </button>
               <button
                 onClick={() => deleteSource(source)}
                 disabled={loading === source.id}
                 className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white rounded transition-colors"
               >
-                Delete
+                削除
               </button>
             </div>
           </div>
