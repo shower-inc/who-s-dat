@@ -35,7 +35,7 @@ export default function NewSourcePage() {
       return
     }
 
-    router.push('/sources')
+    router.push('/admin/sources')
   }
 
   // YouTube URLからチャンネルIDを抽出してRSSフィードURLに変換

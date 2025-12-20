@@ -33,22 +33,20 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 未認証の場合、ダッシュボードへのアクセスをログインにリダイレクト
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    !request.nextUrl.pathname.startsWith('/api/cron') // Cron APIは認証不要
-  ) {
+  // 管理画面（/admin/*）は認証必要
+  const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
+
+  // 未認証で管理画面にアクセスした場合、ログインにリダイレクト
+  if (!user && isAdminPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  // 認証済みでログインページにアクセスした場合、ダッシュボードにリダイレクト
+  // 認証済みでログインページにアクセスした場合、管理画面ダッシュボードにリダイレクト
   if (user && request.nextUrl.pathname === '/login') {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/admin/dashboard'
     return NextResponse.redirect(url)
   }
 

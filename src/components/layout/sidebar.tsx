@@ -6,11 +6,11 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/sources', label: 'Sources', icon: '📡' },
-  { href: '/articles', label: 'Articles', icon: '📰' },
-  { href: '/posts', label: 'Posts', icon: '📤' },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
+  { href: '/admin/sources', label: 'Sources', icon: '📡' },
+  { href: '/admin/articles', label: 'Articles', icon: '📰' },
+  { href: '/admin/posts', label: 'Posts', icon: '📤' },
+  { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ]
 
 export function Sidebar() {
@@ -26,8 +26,8 @@ export function Sidebar() {
   return (
     <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-white">JUSMINE</h1>
-        <p className="text-sm text-gray-500 mt-1">Music News Automation</p>
+        <h1 className="text-2xl font-bold text-white">WHO&apos;S DAT</h1>
+        <p className="text-sm text-gray-500 mt-1">Admin Panel</p>
       </div>
 
       <nav className="flex-1 px-4">

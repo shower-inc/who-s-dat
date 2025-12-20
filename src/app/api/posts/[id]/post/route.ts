@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { postTweet } from '@/lib/twitter/client'
 import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
 
 export async function POST(
   request: Request,
@@ -12,7 +13,7 @@ export async function POST(
   // 投稿を取得
   const { data: post, error: postError } = await supabase
     .from('posts')
-    .select('*, articles(link)')
+    .select('*, articles(id)')
     .eq('id', id)
     .single()
 
@@ -26,9 +27,16 @@ export async function POST(
   }
 
   try {
-    const article = post.articles as { link: string } | null
-    const link = article?.link || ''
-    const text = link ? `${post.content}\n\n${link}` : post.content
+    // サイトURLを取得（環境変数 or リクエストヘッダー）
+    const headersList = await headers()
+    const host = headersList.get('host') || ''
+    const protocol = headersList.get('x-forwarded-proto') || 'https'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${host}`
+
+    // 記事リンクはサイトの記事ページを使用
+    const article = post.articles as { id: string } | null
+    const articleLink = article?.id ? `${baseUrl}/article/${article.id}` : ''
+    const text = articleLink ? `${post.content}\n\n${articleLink}` : post.content
 
     // X APIで投稿
     const result = await postTweet(text)
