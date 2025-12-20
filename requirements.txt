@@ -1,0 +1,4 @@
+feedparser==6.0.11
+deepl==1.18.0
+requests==2.31.0
+python-dotenv==1.0.0

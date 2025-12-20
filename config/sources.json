@@ -1,0 +1,31 @@
+{
+  "uk_afrobeats": {
+    "name": "UK Afrobeats / Afroswing",
+    "sources": [
+      {
+        "name": "GRM Daily",
+        "type": "youtube",
+        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCvzHPDoEsECOrpc5VlulORg",
+        "enabled": true
+      },
+      {
+        "name": "Link Up TV",
+        "type": "youtube",
+        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC6ao1qCr9gI5O5NdJ_eXbng",
+        "enabled": true
+      },
+      {
+        "name": "Mixtape Madness",
+        "type": "youtube",
+        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCIV5bHBvGSvCVmFWRLNIvVg",
+        "enabled": true
+      },
+      {
+        "name": "COLORS",
+        "type": "youtube",
+        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC2Qw1dzXDBAZPwS7zm37g8g",
+        "enabled": true
+      }
+    ]
+  }
+}
