@@ -15,6 +15,7 @@ type PostWithArticle = Post & {
 
 const statusColors: Record<string, string> = {
   draft: 'bg-gray-700 text-gray-300',
+  ready: 'bg-yellow-900 text-yellow-300',
   scheduled: 'bg-cyan-900 text-cyan-300',
   posted: 'bg-green-900 text-green-300',
   failed: 'bg-red-900 text-red-300',
@@ -24,22 +25,42 @@ const statusColors: Record<string, string> = {
 export function PostList({ posts }: { posts: PostWithArticle[] }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [action, setAction] = useState<string | null>(null)
 
-  const schedulePost = async (id: string) => {
+  const postToX = async (id: string) => {
     setLoading(id)
+    setAction('posting')
     try {
-      const res = await fetch(`/api/posts/${id}/schedule`, { method: 'POST' })
+      const res = await fetch(`/api/posts/${id}/post`, { method: 'POST' })
       const data = await res.json()
       if (data.error) {
         alert(`Error: ${data.error}`)
       } else {
-        alert(`Scheduled for ${new Date(data.scheduled_at).toLocaleString()}`)
+        alert(`Posted to X! Tweet ID: ${data.tweet_id}`)
       }
     } catch {
-      alert('Scheduling failed')
+      alert('Posting failed')
     }
     router.refresh()
     setLoading(null)
+    setAction(null)
+  }
+
+  const markReady = async (id: string) => {
+    setLoading(id)
+    setAction('ready')
+    try {
+      const res = await fetch(`/api/posts/${id}/ready`, { method: 'POST' })
+      const data = await res.json()
+      if (data.error) {
+        alert(`Error: ${data.error}`)
+      }
+    } catch {
+      alert('Failed to mark as ready')
+    }
+    router.refresh()
+    setLoading(null)
+    setAction(null)
   }
 
   if (posts.length === 0) {
@@ -78,14 +99,23 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
             </div>
           </div>
 
-          {post.status === 'draft' && (
+          {(post.status === 'draft' || post.status === 'ready') && (
             <div className="mt-4 flex gap-2">
+              {post.status === 'draft' && (
+                <button
+                  onClick={() => markReady(post.id)}
+                  disabled={loading === post.id}
+                  className="px-3 py-1.5 text-sm bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 text-white rounded transition-colors"
+                >
+                  {loading === post.id && action === 'ready' ? 'Marking...' : 'Approve'}
+                </button>
+              )}
               <button
-                onClick={() => schedulePost(post.id)}
+                onClick={() => postToX(post.id)}
                 disabled={loading === post.id}
                 className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded transition-colors"
               >
-                {loading === post.id ? 'Scheduling...' : 'Schedule to Buffer'}
+                {loading === post.id && action === 'posting' ? 'Posting...' : 'Post to X'}
               </button>
               {post.articles?.link && (
                 <a
