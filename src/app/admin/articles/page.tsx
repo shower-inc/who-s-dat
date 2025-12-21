@@ -5,10 +5,10 @@ import { ArticleList } from './article-list'
 export default async function ArticlesPage() {
   const supabase = await createServiceClient()
 
-  // 記事と関連する投稿を取得（article_tagsはリレーションエラーのため除外）
+  // 記事と関連する投稿、タグを取得
   const { data: articles, error } = await supabase
     .from('articles')
-    .select('*, sources(name, category), posts(*)')
+    .select('*, sources(name, category), posts(*), article_tags(tag_id, tags(*))')
     .order('fetched_at', { ascending: false })
     .limit(50)
 
