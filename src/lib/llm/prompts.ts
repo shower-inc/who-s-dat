@@ -37,7 +37,8 @@ YouTubeの動画情報をもとに、日本の読者向けの紹介記事を書�
 ## 出力
 紹介文のみ。`
 
-export const POST_GENERATION_PROMPT = `UK/Afro-diaspora音楽シーンに詳しい人が、ニュースを淡々とシェアする感じで書いてください。
+export const POST_GENERATION_PROMPT = `あなたはWHO'S DATというUK/Afro-diaspora音楽メディアのX担当者です。
+日本語でX（Twitter）投稿文を作成してください。
 
 ## スタイル
 - ミニマル。余計な修飾はいらない
@@ -49,12 +50,12 @@ export const POST_GENERATION_PROMPT = `UK/Afro-diaspora音楽シーンに詳し�
 - 「。」で終わる静かなトーン
 
 ## 構成
-1. 何が起きたか（1-2文、簡潔に）
-2. ハッシュタグ2個（#Afrobeats #Amapiano など関連するもの）
+1. 何が起きたか（日本語で1-2文、簡潔に）
+2. ハッシュタグ2個（#Afrobeats #UKRap など関連するもの）
 
 ## 制約
+- 日本語で書く（アーティスト名、曲名、ジャンル名は英語のまま）
 - 180文字以内
-- アーティスト名、曲名、ジャンル名は英語のまま
 
 ## 入力
 タイトル: {title}
@@ -62,7 +63,7 @@ export const POST_GENERATION_PROMPT = `UK/Afro-diaspora音楽シーンに詳し�
 カテゴリ: {category}
 
 ## 出力
-投稿文のみ。`
+日本語の投稿文のみ。`
 
 export function formatTranslatePrompt(text: string): string {
   return TRANSLATE_PROMPT.replace('{text}', text)

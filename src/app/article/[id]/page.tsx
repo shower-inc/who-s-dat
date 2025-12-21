@@ -26,7 +26,7 @@ export async function generateMetadata({
 
   const { data: article } = await supabase
     .from('articles')
-    .select('title_ja, title_original, summary_ja, thumbnail_url')
+    .select('title_ja, title_original, summary_ja, thumbnail_url, link')
     .eq('id', id)
     .in('status', ['published', 'posted'])
     .single()
@@ -38,9 +38,10 @@ export async function generateMetadata({
   const title = article.title_ja || article.title_original
   const description = article.summary_ja || ''
 
-  // 自前のOG画像プロキシを使用（外部URLより確実）
+  // サムネイルがあるか、YouTubeリンクの場合はOG画像を使用
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://who-s-dat.vercel.app'
-  const ogImageUrl = article.thumbnail_url ? `${baseUrl}/api/og/${id}` : null
+  const hasImage = article.thumbnail_url || extractYouTubeVideoId(article.link || '')
+  const ogImageUrl = hasImage ? `${baseUrl}/api/og/${id}` : null
 
   return {
     title: `${title} | WHO'S DAT`,
