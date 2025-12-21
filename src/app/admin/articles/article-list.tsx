@@ -60,7 +60,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
   // 記事編集モーダル
   const [editingArticle, setEditingArticle] = useState<ArticleWithSourceAndPosts | null>(null)
-  const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '', content_type: 'news' as ContentType })
+  const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '', content_type: 'news' as ContentType, editor_note: '' })
 
   // 投稿文編集モーダル
   const [editingPost, setEditingPost] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)
@@ -164,6 +164,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       title_ja: article.title_ja || '',
       summary_ja: article.summary_ja || '',
       content_type: article.content_type || 'news',
+      editor_note: (article as ArticleWithSourceAndPosts & { editor_note?: string }).editor_note || '',
     })
   }
 
@@ -695,6 +696,23 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                   <option key={type} value={type}>{CONTENT_TYPE_LABELS[type]}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                編集者コメント
+                <span className="text-gray-500 font-normal ml-2">（記事・投稿生成に反映）</span>
+              </label>
+              <textarea
+                value={editForm.editor_note}
+                onChange={(e) => setEditForm({ ...editForm, editor_note: e.target.value })}
+                rows={3}
+                placeholder="例: 前回紹介したアーティスト / MVの映像が良い / UK Drillシーンの文脈で紹介"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-600"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                このコメントは記事生成・X投稿生成時にLLMへの指示として使われます
+              </p>
             </div>
 
             <div className="flex gap-3">

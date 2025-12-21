@@ -38,7 +38,7 @@ YouTubeの動画情報をもとに、日本の読者向けの紹介記事を書�
 説明文: {description}
 チャンネル: {channel}
 アーティスト情報: {artistInfo}
-
+{editorNote}
 ## 出力
 紹介文のみ。`
 
@@ -56,7 +56,7 @@ export const POST_GENERATION_PROMPT = `以下の情報からX投稿文を作成�
 タイトル: {title}
 概要: {summary}
 カテゴリ: {category}
-
+{editorNote}
 形式:
 1行目: 何が起きたか（1-2文）
 2行目: ハッシュタグ2-3個`
@@ -72,13 +72,19 @@ export function formatPostGenerationPrompt(params: {
   title: string
   summary: string
   category: string
+  editorNote?: string
 }): { system: string; user: string } {
+  const editorNoteSection = params.editorNote
+    ? `編集者からの指示: ${params.editorNote}\n`
+    : ''
+
   return {
     system: POST_GENERATION_SYSTEM,
     user: POST_GENERATION_PROMPT
       .replace('{title}', params.title)
       .replace('{summary}', params.summary || 'なし')
       .replace('{category}', params.category)
+      .replace('{editorNote}', editorNoteSection)
   }
 }
 
@@ -87,12 +93,18 @@ export function formatArticleGenerationPrompt(params: {
   description: string
   channel: string
   artistInfo?: string
+  editorNote?: string
 }): string {
+  const editorNoteSection = params.editorNote
+    ? `編集者からの指示: ${params.editorNote}\n`
+    : ''
+
   return ARTICLE_GENERATION_PROMPT
     .replace('{title}', params.title)
     .replace('{description}', params.description || 'なし')
     .replace('{channel}', params.channel)
     .replace('{artistInfo}', params.artistInfo || 'なし')
+    .replace('{editorNote}', editorNoteSection)
 }
 
 // content_type自動判定プロンプト

@@ -39,6 +39,7 @@ export async function generatePost(params: {
   title: string
   summary: string
   category: string
+  editorNote?: string
 }): Promise<string> {
   const client = getClient()
   const { system, user } = formatPostGenerationPrompt(params)
@@ -63,6 +64,7 @@ export async function generateArticle(params: {
   description: string
   channel: string
   artistInfo?: string
+  editorNote?: string
 }): Promise<{ title: string; content: string }> {
   const client = getClient()
 
@@ -71,6 +73,7 @@ export async function generateArticle(params: {
     description: params.description,
     channel: params.channel,
     artistInfo: params.artistInfo,
+    editorNote: params.editorNote,
   })
 
   const message = await client.messages.create({

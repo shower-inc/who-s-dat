@@ -22,11 +22,20 @@ export const metadata: Metadata = {
     siteName: "WHO'S DAT",
     locale: 'ja_JP',
     type: 'website',
+    images: [
+      {
+        url: '/ogp.png',
+        width: 1200,
+        height: 630,
+        alt: "WHO'S DAT - Afro-diaspora Music Media",
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: "WHO'S DAT",
     description: "UK Afrobeats, Amapiano, Afro-diaspora の最新音楽ニュースを日本語でお届け",
+    images: ['/ogp.png'],
   },
 };
 
