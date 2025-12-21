@@ -166,6 +166,7 @@ async function fetchTrackMetadata(url: string): Promise<TrackMetadata | null> {
       platform: 'youtube',
       trackName,
       artistNames,
+      releaseDate: videoDetails.publishedAt || undefined,
       description: videoDetails.description || undefined,
       thumbnailUrl: videoDetails.thumbnailUrl || undefined,
       externalUrl: `https://www.youtube.com/watch?v=${youtubeVideoId}`,
