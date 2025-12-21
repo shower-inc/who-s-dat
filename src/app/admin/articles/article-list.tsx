@@ -204,6 +204,25 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setAction(null)
   }
 
+  const unpublishArticle = async (id: string) => {
+    if (!confirm('この記事をサイトから非公開にしますか？\n（Xの投稿は手動で削除してください）')) return
+
+    setLoading(id)
+    setAction('unpublishing')
+    try {
+      const res = await fetch(`/api/articles/${id}/unpublish`, { method: 'POST' })
+      const data = await res.json()
+      if (data.error) {
+        alert(`Error: ${data.error}`)
+      }
+    } catch {
+      alert('非公開に失敗しました')
+    }
+    router.refresh()
+    setLoading(null)
+    setAction(null)
+  }
+
   // 記事の投稿文を取得（X用で未投稿のもの優先、なければ投稿済み）
   const getXPost = (article: ArticleWithSourceAndPosts): Post | null => {
     const xPosts = article.posts.filter(p => p.platform === 'x')
@@ -225,6 +244,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
         const canTranslate = article.status === 'pending'
         const canGenerate = article.status === 'translated' && !xPost
         const canPublish = ['translated', 'ready'].includes(article.status) && article.status !== 'published' && article.status !== 'posted'
+        const canUnpublish = ['published', 'posted'].includes(article.status)
         const canPostToX = xPost && xPost.status !== 'posted'
         const canSkip = ['pending', 'translated', 'ready'].includes(article.status)
         const isPosted = article.status === 'posted' || xPost?.status === 'posted'
@@ -315,6 +335,16 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                       className="px-3 py-1.5 text-sm bg-teal-600 hover:bg-teal-700 disabled:bg-gray-600 text-white rounded transition-colors"
                     >
                       {loading === article.id && action === 'publishing' ? '公開中...' : 'サイトに公開'}
+                    </button>
+                  )}
+
+                  {canUnpublish && (
+                    <button
+                      onClick={() => unpublishArticle(article.id)}
+                      disabled={loading === article.id}
+                      className="px-3 py-1.5 text-sm bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white rounded transition-colors"
+                    >
+                      {loading === article.id && action === 'unpublishing' ? '処理中...' : '非公開にする'}
                     </button>
                   )}
 
