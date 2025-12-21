@@ -509,8 +509,8 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                   </span>
                 </div>
 
-                {/* インラインコメント入力（翻訳済みでまだ生成していない場合） */}
-                {article.status === 'translated' && !xPost && (
+                {/* インラインコメント入力（翻訳済みの場合常に表示） */}
+                {article.status === 'translated' && (
                   <div className="mt-4 p-3 bg-purple-900/20 border border-purple-800/50 rounded-lg">
                     <label className="block text-xs text-purple-300 mb-2">
                       編集者コメント（記事・X投稿に反映）

@@ -30,9 +30,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // category_idからカテゴリのslugを取得
+    const { data: categoryData } = await supabase
+      .from('categories')
+      .select('slug')
+      .eq('id', category_id)
+      .single()
+
+    const category = categoryData?.slug || 'music'
+
     const { data, error } = await supabase
       .from('sources')
-      .insert([{ name, type, url, category_id, thumbnail_url }])
+      .insert([{ name, type, url, category, thumbnail_url }])
       .select()
       .single()
 
