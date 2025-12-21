@@ -1,7 +1,18 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { postTweet } from '@/lib/twitter/client'
+import { postTweetWithImage, postTweet } from '@/lib/twitter/client'
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
+
+function extractYouTubeVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+  ]
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match) return match[1]
+  }
+  return null
+}
 
 export async function POST(
   request: Request,
@@ -10,10 +21,10 @@ export async function POST(
   const { id } = await params
   const supabase = await createServiceClient()
 
-  // 投稿を取得
+  // 投稿を取得（記事のサムネイル情報も含む）
   const { data: post, error: postError } = await supabase
     .from('posts')
-    .select('*, articles(id)')
+    .select('*, articles(id, thumbnail_url, link)')
     .eq('id', id)
     .single()
 
@@ -34,12 +45,23 @@ export async function POST(
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${host}`
 
     // 記事リンクはサイトの記事ページを使用
-    const article = post.articles as { id: string } | null
+    const article = post.articles as { id: string; thumbnail_url: string | null; link: string } | null
     const articleLink = article?.id ? `${baseUrl}/article/${article.id}` : ''
     const text = articleLink ? `${post.content}\n\n${articleLink}` : post.content
 
-    // X APIで投稿
-    const result = await postTweet(text)
+    // サムネイルURLを決定（DBにない場合はYouTubeリンクから生成）
+    let thumbnailUrl = article?.thumbnail_url
+    if (!thumbnailUrl && article?.link) {
+      const videoId = extractYouTubeVideoId(article.link)
+      if (videoId) {
+        thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+      }
+    }
+
+    // X APIで投稿（画像がある場合は画像付き）
+    const result = thumbnailUrl
+      ? await postTweetWithImage(text, thumbnailUrl)
+      : await postTweet(text)
 
     // ステータスを更新
     await supabase
