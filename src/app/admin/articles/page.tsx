@@ -5,9 +5,10 @@ import { ArticleList } from './article-list'
 export default async function ArticlesPage() {
   const supabase = await createClient()
 
+  // 記事と関連する投稿を一緒に取得
   const { data: articles } = await supabase
     .from('articles')
-    .select('*, sources(name, category)')
+    .select('*, sources(name, category), posts(*)')
     .order('fetched_at', { ascending: false })
     .limit(50)
 
