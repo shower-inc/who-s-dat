@@ -313,3 +313,113 @@ export async function searchArtistFullProfile(artistName: string): Promise<Artis
     relatedArtists,
   }
 }
+
+// プレイリスト情報
+export interface SpotifyPlaylist {
+  id: string
+  name: string
+  owner: string
+  trackCount: number
+  url: string
+}
+
+// アーティスト関連のプレイリストを検索（"This Is ○○" など）
+export async function searchArtistPlaylists(artistName: string): Promise<SpotifyPlaylist[]> {
+  try {
+    const token = await getAccessToken()
+
+    // "This Is [アーティスト名]" と "[アーティスト名]" で検索
+    const queries = [
+      `This Is ${artistName}`,
+      artistName,
+    ]
+
+    const results: SpotifyPlaylist[] = []
+
+    for (const query of queries) {
+      const response = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=playlist&limit=5`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) continue
+
+      const data = await response.json()
+      const playlists = data.playlists?.items || []
+
+      for (const playlist of playlists) {
+        if (!playlist) continue
+
+        // Spotifyの公式プレイリストか、アーティスト名を含むものを優先
+        const isOfficial = playlist.owner?.id === 'spotify'
+        const containsArtist = playlist.name?.toLowerCase().includes(artistName.toLowerCase())
+
+        if (isOfficial || containsArtist) {
+          results.push({
+            id: playlist.id,
+            name: playlist.name,
+            owner: playlist.owner?.display_name || 'Unknown',
+            trackCount: playlist.tracks?.total || 0,
+            url: playlist.external_urls?.spotify || '',
+          })
+        }
+      }
+    }
+
+    // 重複を除去
+    const uniqueResults = results.filter((playlist, index, self) =>
+      index === self.findIndex(p => p.id === playlist.id)
+    )
+
+    return uniqueResults.slice(0, 5)
+  } catch (error) {
+    console.error('Spotify playlist search error:', error)
+    return []
+  }
+}
+
+// トラックのオーディオ特性を取得
+export interface AudioFeatures {
+  tempo: number // BPM
+  energy: number // 0-1
+  danceability: number // 0-1
+  valence: number // 0-1 (明るさ)
+  acousticness: number // 0-1
+}
+
+export async function getTrackAudioFeatures(trackId: string): Promise<AudioFeatures | null> {
+  try {
+    const token = await getAccessToken()
+
+    const response = await fetch(
+      `https://api.spotify.com/v1/audio-features/${trackId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      console.error(`Spotify API error: ${response.status}`)
+      return null
+    }
+
+    const data = await response.json()
+
+    return {
+      tempo: Math.round(data.tempo),
+      energy: data.energy,
+      danceability: data.danceability,
+      valence: data.valence,
+      acousticness: data.acousticness,
+    }
+  } catch (error) {
+    console.error('Spotify API error:', error)
+    return null
+  }
+}

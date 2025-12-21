@@ -1,7 +1,7 @@
 // アーティストリサーチモジュール
 // Web検索 + Spotify情報を組み合わせてアーティストの背景情報を収集
 
-import { searchArtistFullProfile, getArtistFullProfile, type ArtistFullProfile } from '@/lib/spotify/client'
+import { searchArtistFullProfile, getArtistFullProfile, searchArtistPlaylists, type ArtistFullProfile, type SpotifyPlaylist } from '@/lib/spotify/client'
 
 // Web検索結果の型
 interface WebSearchResult {
@@ -15,6 +15,7 @@ interface WebSearchResult {
 export interface ArtistResearch {
   // Spotify情報
   spotifyProfile: ArtistFullProfile | null
+  playlists: SpotifyPlaylist[]
 
   // Web検索で収集した情報
   recentNews: WebSearchResult[]
@@ -26,6 +27,7 @@ export interface ArtistResearch {
     followers: number
     topTrackNames: string[]
     relatedArtistNames: string[]
+    playlistNames: string[]
     recentNewsHeadlines: string[]
   }
 }
@@ -93,6 +95,10 @@ export async function researchArtist(artistName: string, options?: {
     console.log(`[research] Found Spotify profile: ${spotifyProfile.artist.name}, ${spotifyProfile.artist.followers} followers`)
   }
 
+  // プレイリスト検索（"This Is ○○" など）
+  const playlists = await searchArtistPlaylists(artistName)
+  console.log(`[research] Found ${playlists.length} playlists`)
+
   // Web検索: 最新ニュース
   const newsQuery = `${artistName} music news 2024 2025`
   const recentNews = await webSearch(newsQuery, { num: 5 })
@@ -109,11 +115,13 @@ export async function researchArtist(artistName: string, options?: {
     followers: spotifyProfile?.artist.followers || 0,
     topTrackNames: spotifyProfile?.topTracks.map(t => t.name) || [],
     relatedArtistNames: spotifyProfile?.relatedArtists.map(a => a.name) || [],
+    playlistNames: playlists.map(p => p.name),
     recentNewsHeadlines: recentNews.map(n => n.title),
   }
 
   return {
     spotifyProfile,
+    playlists,
     recentNews,
     interviews,
     summary,
@@ -141,6 +149,15 @@ export function formatResearchForPrompt(research: ArtistResearch): string {
 
     if (relatedArtists.length > 0) {
       parts.push(`関連アーティスト: ${relatedArtists.map(a => a.name).join(', ')}`)
+    }
+  }
+
+  // プレイリスト
+  if (research.playlists.length > 0) {
+    parts.push('')
+    parts.push(`【Spotifyプレイリスト】`)
+    for (const playlist of research.playlists) {
+      parts.push(`- ${playlist.name} (by ${playlist.owner}, ${playlist.trackCount}曲)`)
     }
   }
 
