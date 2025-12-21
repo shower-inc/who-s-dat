@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { fetchRssFeed } from '@/lib/rss/fetcher'
+import { fetchRssFeed, resolveYouTubeUrl } from '@/lib/rss/fetcher'
 import { NextResponse } from 'next/server'
 
 export async function POST(
@@ -21,7 +21,18 @@ export async function POST(
   }
 
   try {
-    // RSSフィードを取得
+    // YouTube URLをRSS URLに変換（DBも更新）
+    if (source.type === 'youtube') {
+      const { feedUrl, wasConverted } = await resolveYouTubeUrl(source.url)
+      if (wasConverted) {
+        await supabase
+          .from('sources')
+          .update({ url: feedUrl })
+          .eq('id', id)
+      }
+    }
+
+    // RSSフィードを取得（fetchRssFeed内でも自動変換される）
     const articles = await fetchRssFeed(source.url)
 
     // 記事をDBに保存（新規は追加、既存はview_count/like_countを更新）

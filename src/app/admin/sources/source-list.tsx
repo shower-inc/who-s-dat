@@ -5,10 +5,17 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+type FetchStatus = {
+  id: string
+  status: 'idle' | 'resolving' | 'fetching' | 'saving' | 'done' | 'error'
+  message?: string
+}
+
 export function SourceList({ sources }: { sources: Source[] }) {
   const supabase = createClient()
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [fetchStatus, setFetchStatus] = useState<FetchStatus | null>(null)
 
   const toggleEnabled = async (source: Source) => {
     setLoading(source.id)
@@ -30,16 +37,27 @@ export function SourceList({ sources }: { sources: Source[] }) {
 
   const fetchSource = async (source: Source) => {
     setLoading(source.id)
+    setFetchStatus({ id: source.id, status: 'resolving', message: 'チャンネル情報を取得中...' })
+
     try {
+      setFetchStatus({ id: source.id, status: 'fetching', message: 'フィードを取得中...' })
       const res = await fetch(`/api/sources/${source.id}/fetch`, { method: 'POST' })
       const data = await res.json()
+
       if (data.error) {
-        alert(`Error: ${data.error}`)
+        setFetchStatus({ id: source.id, status: 'error', message: data.error })
+        setTimeout(() => setFetchStatus(null), 5000)
       } else {
-        alert(`${data.count}件の記事を取得しました`)
+        setFetchStatus({
+          id: source.id,
+          status: 'done',
+          message: `${data.count}件取得 (新規: ${data.inserted}件)`
+        })
+        setTimeout(() => setFetchStatus(null), 3000)
       }
-    } catch (e) {
-      alert('取得に失敗しました')
+    } catch {
+      setFetchStatus({ id: source.id, status: 'error', message: '取得に失敗しました' })
+      setTimeout(() => setFetchStatus(null), 5000)
     }
     router.refresh()
     setLoading(null)
@@ -79,8 +97,22 @@ export function SourceList({ sources }: { sources: Source[] }) {
                   最終取得: {new Date(source.last_fetched_at).toLocaleString('ja-JP')}
                 </p>
               )}
-              {source.fetch_error && (
+              {source.fetch_error && !fetchStatus?.id && (
                 <p className="text-xs text-red-400 mt-1">{source.fetch_error}</p>
+              )}
+              {fetchStatus?.id === source.id && (
+                <div className={`mt-2 text-sm flex items-center gap-2 ${
+                  fetchStatus.status === 'error' ? 'text-red-400' :
+                  fetchStatus.status === 'done' ? 'text-green-400' :
+                  'text-blue-400'
+                }`}>
+                  {fetchStatus.status !== 'done' && fetchStatus.status !== 'error' && (
+                    <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {fetchStatus.status === 'done' && <span>✓</span>}
+                  {fetchStatus.status === 'error' && <span>✗</span>}
+                  <span>{fetchStatus.message}</span>
+                </div>
               )}
             </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { Article, Post } from '@/types/database'
+import { Article, Post, ContentType, CONTENT_TYPE_LABELS, CONTENT_TYPES } from '@/types/database'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -45,9 +45,13 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   const [loading, setLoading] = useState<string | null>(null)
   const [action, setAction] = useState<string | null>(null)
 
+  // フィルター
+  const [contentTypeFilter, setContentTypeFilter] = useState<ContentType | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+
   // 記事編集モーダル
   const [editingArticle, setEditingArticle] = useState<ArticleWithSourceAndPosts | null>(null)
-  const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '' })
+  const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '', content_type: 'news' as ContentType })
 
   // 投稿文編集モーダル
   const [editingPost, setEditingPost] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)

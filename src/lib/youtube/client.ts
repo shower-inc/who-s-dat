@@ -67,6 +67,85 @@ export async function getVideoDetails(videoId: string): Promise<VideoDetails | n
   }
 }
 
+export interface ChannelInfo {
+  channelId: string
+  title: string
+  description: string | null
+  thumbnailUrl: string | null
+  subscriberCount: number | null
+}
+
+// Get channel ID from @handle
+export async function getChannelByHandle(handle: string): Promise<ChannelInfo | null> {
+  const apiKey = getApiKey()
+
+  // Remove @ if present
+  const cleanHandle = handle.startsWith('@') ? handle.slice(1) : handle
+
+  const params = new URLSearchParams({
+    part: 'snippet,statistics',
+    forHandle: cleanHandle,
+    key: apiKey,
+  })
+
+  const response = await fetch(`${YOUTUBE_API_BASE}/channels?${params}`)
+
+  if (!response.ok) {
+    console.error(`YouTube API error: ${response.status} ${response.statusText}`)
+    return null
+  }
+
+  const data = await response.json()
+
+  if (!data.items || data.items.length === 0) {
+    return null
+  }
+
+  const item = data.items[0]
+
+  return {
+    channelId: item.id,
+    title: item.snippet?.title || '',
+    description: item.snippet?.description || null,
+    thumbnailUrl: item.snippet?.thumbnails?.default?.url || null,
+    subscriberCount: item.statistics?.subscriberCount ? parseInt(item.statistics.subscriberCount, 10) : null,
+  }
+}
+
+// Get channel by ID
+export async function getChannelById(channelId: string): Promise<ChannelInfo | null> {
+  const apiKey = getApiKey()
+
+  const params = new URLSearchParams({
+    part: 'snippet,statistics',
+    id: channelId,
+    key: apiKey,
+  })
+
+  const response = await fetch(`${YOUTUBE_API_BASE}/channels?${params}`)
+
+  if (!response.ok) {
+    console.error(`YouTube API error: ${response.status} ${response.statusText}`)
+    return null
+  }
+
+  const data = await response.json()
+
+  if (!data.items || data.items.length === 0) {
+    return null
+  }
+
+  const item = data.items[0]
+
+  return {
+    channelId: item.id,
+    title: item.snippet?.title || '',
+    description: item.snippet?.description || null,
+    thumbnailUrl: item.snippet?.thumbnails?.default?.url || null,
+    subscriberCount: item.statistics?.subscriberCount ? parseInt(item.statistics.subscriberCount, 10) : null,
+  }
+}
+
 export async function getMultipleVideoDetails(videoIds: string[]): Promise<Map<string, VideoDetails>> {
   if (videoIds.length === 0) {
     return new Map()

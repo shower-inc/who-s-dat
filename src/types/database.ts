@@ -6,6 +6,27 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// Content type for articles
+export type ContentType = 'news' | 'release' | 'artist_feature' | 'scene_culture' | 'pickup_tunes'
+
+// Content type labels in Japanese
+export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
+  news: 'ニュース',
+  release: 'リリース情報',
+  artist_feature: 'アーティスト特集',
+  scene_culture: 'シーン・カルチャー',
+  pickup_tunes: 'ピックアップチューン',
+}
+
+// Content type list for iteration
+export const CONTENT_TYPES: ContentType[] = [
+  'news',
+  'release',
+  'artist_feature',
+  'scene_culture',
+  'pickup_tunes',
+]
+
 export interface Database {
   public: {
     Tables: {
@@ -62,6 +83,7 @@ export interface Database {
           published_at: string | null
           fetched_at: string
           status: 'pending' | 'translating' | 'translated' | 'generating' | 'ready' | 'published' | 'scheduled' | 'posted' | 'skipped' | 'error'
+          content_type: ContentType
           view_count: number | null
           like_count: number | null
           created_at: string
@@ -81,6 +103,7 @@ export interface Database {
           published_at?: string | null
           fetched_at?: string
           status?: 'pending' | 'translating' | 'translated' | 'generating' | 'ready' | 'published' | 'scheduled' | 'posted' | 'skipped' | 'error'
+          content_type?: ContentType
           view_count?: number | null
           like_count?: number | null
           created_at?: string
@@ -100,6 +123,7 @@ export interface Database {
           published_at?: string | null
           fetched_at?: string
           status?: 'pending' | 'translating' | 'translated' | 'generating' | 'ready' | 'published' | 'scheduled' | 'posted' | 'skipped' | 'error'
+          content_type?: ContentType
           view_count?: number | null
           like_count?: number | null
           created_at?: string

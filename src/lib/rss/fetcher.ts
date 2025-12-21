@@ -1,6 +1,6 @@
 import Parser from 'rss-parser'
 import crypto from 'crypto'
-import { getMultipleVideoDetails, extractVideoId } from '../youtube/client'
+import { getMultipleVideoDetails, extractVideoId, getChannelByHandle } from '../youtube/client'
 
 const parser = new Parser({
   customFields: {
@@ -46,8 +46,46 @@ async function fetchWithRetry(url: string, retries = 3, delay = 1000) {
   throw new Error(`Failed to fetch RSS from ${url} after ${retries} attempts: ${lastError?.message}`)
 }
 
+// Convert YouTube URL to RSS feed URL
+export async function resolveYouTubeUrl(url: string): Promise<{ feedUrl: string; wasConverted: boolean }> {
+  // Already an RSS feed URL
+  if (url.includes('/feeds/videos.xml')) {
+    return { feedUrl: url, wasConverted: false }
+  }
+
+  // YouTube channel URL with channel ID
+  if (url.includes('youtube.com/channel/')) {
+    const channelId = url.match(/channel\/([^\/\?]+)/)?.[1]
+    if (channelId) {
+      return {
+        feedUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
+        wasConverted: true
+      }
+    }
+  }
+
+  // YouTube @handle URL
+  if (url.includes('youtube.com/@') || url.includes('/@')) {
+    const handle = url.match(/@([^\/\?]+)/)?.[1]
+    if (handle) {
+      const channel = await getChannelByHandle(handle)
+      if (channel) {
+        return {
+          feedUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.channelId}`,
+          wasConverted: true
+        }
+      }
+      throw new Error(`Channel not found for handle: @${handle}`)
+    }
+  }
+
+  return { feedUrl: url, wasConverted: false }
+}
+
 export async function fetchRssFeed(url: string): Promise<FetchedArticle[]> {
-  const feed = await fetchWithRetry(url)
+  // Automatically resolve YouTube URLs
+  const { feedUrl } = await resolveYouTubeUrl(url)
+  const feed = await fetchWithRetry(feedUrl)
   const articles: FetchedArticle[] = []
 
   // YouTube動画IDを収集
