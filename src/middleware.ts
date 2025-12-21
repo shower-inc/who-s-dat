@@ -32,13 +32,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // /login ページは不要になったので、アクセスしたらダッシュボードにリダイレクト
-  if (request.nextUrl.pathname === '/login') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/admin/dashboard'
-    return NextResponse.redirect(url)
-  }
-
   return NextResponse.next()
 }
 
