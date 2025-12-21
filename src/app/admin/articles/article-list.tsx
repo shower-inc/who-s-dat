@@ -294,11 +294,13 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
                 {/* X投稿文表示 */}
                 {xPost && (
-                  <div className="mt-4 p-3 bg-gray-800 rounded-lg">
+                  <div className={`mt-4 p-3 rounded-lg ${xPost.status === 'posted' ? 'bg-green-900/30 border border-green-800' : 'bg-gray-800'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-gray-400">X投稿文</span>
                       {xPost.status === 'posted' && (
-                        <span className="text-xs text-green-400">投稿済み</span>
+                        <span className="px-2 py-0.5 text-xs bg-green-600 text-white rounded">
+                          X投稿済 {xPost.posted_at && `(${new Date(xPost.posted_at).toLocaleDateString('ja-JP')})`}
+                        </span>
                       )}
                     </div>
                     <p className="text-sm text-gray-200 whitespace-pre-wrap">{xPost.content}</p>
