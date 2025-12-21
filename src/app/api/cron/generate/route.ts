@@ -36,6 +36,7 @@ export async function POST(request: Request) {
         title: article.title_ja || article.title_original,
         summary: article.summary_ja || article.summary_original || '',
         category: source?.category || 'music',
+        editorNote: article.editor_note || undefined,
       })
 
       await supabase.from('posts').insert({

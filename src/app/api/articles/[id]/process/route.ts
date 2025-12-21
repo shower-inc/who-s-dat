@@ -58,6 +58,7 @@ export async function POST(
         description: article.summary_original || '',
         channel: source?.name || 'Unknown',
         artistInfo,
+        editorNote: article.editor_note || undefined,
       })
 
       title_ja = translated.title
@@ -83,6 +84,7 @@ export async function POST(
       title: title_ja || article.title_original,
       summary: summary_ja || article.summary_original || '',
       category: source?.category || 'music',
+      editorNote: article.editor_note || undefined,
     })
 
     // Step 3: 投稿を作成（既存があれば更新）
