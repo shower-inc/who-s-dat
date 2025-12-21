@@ -113,11 +113,11 @@ export async function detectContentType(params: {
 
   const content = message.content[0]
   if (content.type !== 'text') {
-    return 'news' // デフォルト
+    return 'tune' // デフォルト
   }
 
   const result = content.text.trim().toLowerCase()
-  const validTypes: ContentType[] = ['news', 'release', 'artist_feature', 'scene_culture', 'pickup_tunes']
+  const validTypes: ContentType[] = ['mv', 'news', 'interview', 'live', 'feature', 'tune']
 
   if (validTypes.includes(result as ContentType)) {
     return result as ContentType
@@ -130,5 +130,5 @@ export async function detectContentType(params: {
     }
   }
 
-  return 'news' // デフォルト
+  return 'tune' // デフォルト（楽曲紹介が多いため）
 }

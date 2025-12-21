@@ -1,6 +1,6 @@
 'use client'
 
-import { Article, Post, ContentType, CONTENT_TYPE_LABELS, CONTENT_TYPES, Tag } from '@/types/database'
+import { Article, Post, ContentType, CONTENT_TYPE_LABELS, CONTENT_TYPE_ICONS, CONTENT_TYPES, Tag } from '@/types/database'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
 
@@ -388,7 +388,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       {/* フィルター */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-400">カテゴリー:</label>
+          <label className="text-sm text-gray-400">種別:</label>
           <select
             value={contentTypeFilter}
             onChange={(e) => setContentTypeFilter(e.target.value as ContentType | 'all')}
@@ -396,7 +396,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
           >
             <option value="all">すべて</option>
             {CONTENT_TYPES.map(type => (
-              <option key={type} value={type}>{CONTENT_TYPE_LABELS[type]}</option>
+              <option key={type} value={type}>{CONTENT_TYPE_ICONS[type]} {CONTENT_TYPE_LABELS[type]}</option>
             ))}
           </select>
         </div>
@@ -470,7 +470,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                     )}
                     <div className="flex items-center gap-3 text-sm text-gray-400 mt-2">
                       <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 rounded text-xs">
-                        {CONTENT_TYPE_LABELS[article.content_type] || 'ニュース'}
+                        {CONTENT_TYPE_ICONS[article.content_type]} {CONTENT_TYPE_LABELS[article.content_type] || 'ニュース'}
                       </span>
                       <span>{article.sources?.name} • {article.sources?.category}</span>
                       {(article.view_count !== null || article.like_count !== null) && (
@@ -800,7 +800,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                カテゴリー
+                コンテンツ種別
               </label>
               <select
                 value={editForm.content_type}
@@ -808,7 +808,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {CONTENT_TYPES.map(type => (
-                  <option key={type} value={type}>{CONTENT_TYPE_LABELS[type]}</option>
+                  <option key={type} value={type}>{CONTENT_TYPE_ICONS[type]} {CONTENT_TYPE_LABELS[type]}</option>
                 ))}
               </select>
             </div>

@@ -101,9 +101,13 @@ export async function POST(
       .update({ status: 'generating' })
       .eq('id', id)
 
+    // 日本語タイトルと概要を使用。なければ英語版を使用
+    const titleForPost = title_ja || article.title_ja || article.title_original
+    const summaryForPost = summary_ja || article.summary_ja || article.summary_original || ''
+
     const postContent = await generatePost({
-      title: title_ja || article.title_original,
-      summary: summary_ja || article.summary_original || '',
+      title: titleForPost,
+      summary: summaryForPost,
       category: source?.category || 'music',
       editorNote: article.editor_note || undefined,
     })

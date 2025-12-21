@@ -6,25 +6,37 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-// Content type for articles
-export type ContentType = 'news' | 'release' | 'artist_feature' | 'scene_culture' | 'pickup_tunes'
+// Content type for articles (コンテンツ種別)
+export type ContentType = 'mv' | 'news' | 'interview' | 'live' | 'feature' | 'tune'
 
 // Content type labels in Japanese
 export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
+  mv: 'MV',
   news: 'ニュース',
-  release: 'リリース情報',
-  artist_feature: 'アーティスト特集',
-  scene_culture: 'シーン・カルチャー',
-  pickup_tunes: 'ピックアップチューン',
+  interview: 'インタビュー',
+  live: 'ライブ',
+  feature: '特集',
+  tune: 'TUNE',
+}
+
+// Content type icons (emoji)
+export const CONTENT_TYPE_ICONS: Record<ContentType, string> = {
+  mv: '🎬',
+  news: '📰',
+  interview: '🎤',
+  live: '🎪',
+  feature: '📝',
+  tune: '🎵',
 }
 
 // Content type list for iteration
 export const CONTENT_TYPES: ContentType[] = [
+  'mv',
   'news',
-  'release',
-  'artist_feature',
-  'scene_culture',
-  'pickup_tunes',
+  'interview',
+  'live',
+  'feature',
+  'tune',
 ]
 
 export interface Database {

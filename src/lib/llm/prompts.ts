@@ -42,23 +42,23 @@ YouTubeの動画情報をもとに、日本の読者向けの紹介記事を書�
 ## 出力
 紹介文のみ。`
 
-export const POST_GENERATION_SYSTEM = `あなたはWHO'S DATというUK/Afro-diaspora音楽メディアのX担当者。投稿文のみを出力する。
+export const POST_GENERATION_SYSTEM = `あなたはWHO'S DATというUK/Afro-diaspora音楽メディアのX担当者。日本語で投稿文を作成する。
 
 絶対ルール:
+- 必ず日本語で書く（アーティスト名、曲名、ジャンル名のみ英語OK）
 - 投稿文のみを出力。説明や前置きは禁止
 - 感嘆符、絵文字、「ヤバい」「マジ」「神」「〜」「w」は禁止
 - 「。」で終わる静かだが芯のあるトーン
-- 180文字以内
-- アーティスト名、曲名、ジャンル名は英語のまま`
+- 180文字以内`
 
-export const POST_GENERATION_PROMPT = `以下の情報からX投稿文を作成。
+export const POST_GENERATION_PROMPT = `以下の情報から日本語でX投稿文を作成。
 
 タイトル: {title}
 概要: {summary}
 カテゴリ: {category}
 {editorNote}
 形式:
-1行目: 何が起きたか（1-2文）
+1行目: 何が起きたか（日本語で1-2文）
 2行目: ハッシュタグ2-3個`
 
 export function formatTranslatePrompt(text: string): { system: string; user: string } {
@@ -108,21 +108,23 @@ export function formatArticleGenerationPrompt(params: {
 }
 
 // content_type自動判定プロンプト
-export const CONTENT_TYPE_PROMPT = `以下の記事情報から、最も適切なカテゴリを1つだけ選んでください。
+export const CONTENT_TYPE_PROMPT = `以下の記事情報から、最も適切なコンテンツ種別を1つだけ選んでください。
 
-## カテゴリの定義
-- news: 業界ニュース、契約、受賞、イベント告知など
-- release: 新曲/新アルバム/EPのリリース情報、MV公開
-- artist_feature: アーティスト紹介、インタビュー、プロフィール
-- scene_culture: シーン全体の動向、カルチャー解説、歴史
-- pickup_tunes: おすすめ曲の紹介、プレイリスト、キュレーション
+## コンテンツ種別の定義
+- mv: ミュージックビデオ、Official Video、visualizer
+- news: 業界ニュース、契約、受賞、イベント告知
+- interview: インタビュー、対談、Q&A
+- live: ライブ映像、フェス、コンサート情報
+- feature: 特集記事、シーン解説、カルチャー解説
+- tune: 楽曲紹介、フリースタイル、プレイリスト
 
 ## 判定のヒント
-- "out now", "new single", "official video" → release
-- "interview", "profile", "meet" → artist_feature
-- "signs with", "announces", "wins award" → news
-- 単純なMV/楽曲紹介 → pickup_tunes
-- シーン解説やジャンル説明 → scene_culture
+- "official video", "music video", "MV", "visualizer" → mv
+- "interview", "talks", "meets", "Q&A" → interview
+- "live", "festival", "concert", "tour" → live
+- "signs with", "announces", "wins award", "releases" → news
+- セッション、フリースタイル、楽曲紹介 → tune
+- シーン解説やジャンル説明 → feature
 
 ## 入力
 タイトル: {title}
@@ -130,7 +132,7 @@ export const CONTENT_TYPE_PROMPT = `以下の記事情報から、最も適切�
 チャンネル/ソース: {source}
 
 ## 出力
-カテゴリ名のみ（news, release, artist_feature, scene_culture, pickup_tunes のいずれか1つ）`
+コンテンツ種別のみ（mv, news, interview, live, feature, tune のいずれか1つ）`
 
 export function formatContentTypePrompt(params: {
   title: string
