@@ -30,3 +30,33 @@ export async function PATCH(
 
   return NextResponse.json({ success: true })
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const supabase = await createServiceClient()
+
+  // まず関連する投稿を削除
+  const { error: postsError } = await supabase
+    .from('posts')
+    .delete()
+    .eq('article_id', id)
+
+  if (postsError) {
+    return NextResponse.json({ error: postsError.message }, { status: 500 })
+  }
+
+  // 記事を削除
+  const { error: articleError } = await supabase
+    .from('articles')
+    .delete()
+    .eq('id', id)
+
+  if (articleError) {
+    return NextResponse.json({ error: articleError.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}

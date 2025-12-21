@@ -223,6 +223,25 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setAction(null)
   }
 
+  const deleteArticle = async (id: string) => {
+    if (!confirm('この記事を削除しますか？\n関連する投稿データも削除されます。この操作は取り消せません。')) return
+
+    setLoading(id)
+    setAction('deleting')
+    try {
+      const res = await fetch(`/api/articles/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.error) {
+        alert(`Error: ${data.error}`)
+      }
+    } catch {
+      alert('削除に失敗しました')
+    }
+    router.refresh()
+    setLoading(null)
+    setAction(null)
+  }
+
   // 記事の投稿文を取得（X用で未投稿のもの優先、なければ投稿済み）
   const getXPost = (article: ArticleWithSourceAndPosts): Post | null => {
     const xPosts = article.posts.filter(p => p.platform === 'x')
@@ -396,6 +415,14 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                   >
                     元記事
                   </a>
+
+                  <button
+                    onClick={() => deleteArticle(article.id)}
+                    disabled={loading === article.id}
+                    className="px-3 py-1.5 text-sm bg-red-900 hover:bg-red-800 disabled:bg-gray-600 text-red-200 rounded transition-colors"
+                  >
+                    {loading === article.id && action === 'deleting' ? '削除中...' : '削除'}
+                  </button>
                 </div>
               </div>
             </div>
