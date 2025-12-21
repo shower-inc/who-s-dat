@@ -83,9 +83,17 @@ export function SourceList({ sources }: { sources: Source[] }) {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">
-                  {source.type === 'youtube' ? '📺' : '📡'}
-                </span>
+                {source.thumbnail_url ? (
+                  <img
+                    src={source.thumbnail_url}
+                    alt={source.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl w-12 h-12 flex items-center justify-center bg-gray-800 rounded-full">
+                    {source.type === 'youtube' ? '📺' : '📡'}
+                  </span>
+                )}
                 <div>
                   <h3 className="text-lg font-medium text-white">{source.name}</h3>
                   <p className="text-sm text-gray-400">{source.category}</p>

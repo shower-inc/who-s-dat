@@ -49,6 +49,7 @@ export default function NewSourcePage() {
     type: 'youtube' as 'youtube' | 'rss',
     url: '',
     category: 'uk_afrobeats',
+    thumbnail_url: null as string | null,
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,6 +86,7 @@ export default function NewSourcePage() {
           ...prev,
           name: prev.name || data.title,
           url: data.rssUrl,
+          thumbnail_url: data.thumbnailUrl,
         }))
       }
     } catch (error) {

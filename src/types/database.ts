@@ -38,6 +38,7 @@ export interface Database {
           url: string
           category: string
           enabled: boolean
+          thumbnail_url: string | null
           last_fetched_at: string | null
           fetch_error: string | null
           created_at: string
@@ -50,6 +51,7 @@ export interface Database {
           url: string
           category: string
           enabled?: boolean
+          thumbnail_url?: string | null
           last_fetched_at?: string | null
           fetch_error?: string | null
           created_at?: string
@@ -62,6 +64,7 @@ export interface Database {
           url?: string
           category?: string
           enabled?: boolean
+          thumbnail_url?: string | null
           last_fetched_at?: string | null
           fetch_error?: string | null
           created_at?: string
