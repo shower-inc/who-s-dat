@@ -37,14 +37,14 @@ export async function POST(
 
     // 記事をDBに保存（新規は追加、既存はview_count/like_countを更新）
     let insertedCount = 0
+    let skippedCount = 0
     for (const article of articles) {
-      // まず既存の記事を確認
+      // まず既存の記事を確認（external_idのみで検索 - source_idがnullの場合も考慮）
       const { data: existing } = await supabase
         .from('articles')
         .select('id')
-        .eq('source_id', source.id)
         .eq('external_id', article.external_id)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         // 既存の記事はview_count, like_count, summary_originalのみ更新
@@ -56,6 +56,7 @@ export async function POST(
             summary_original: article.summary_original,
           })
           .eq('id', existing.id)
+        skippedCount++
       } else {
         // 新規記事は挿入
         const { error } = await supabase.from('articles').insert({
@@ -87,6 +88,7 @@ export async function POST(
       success: true,
       count: articles.length,
       inserted: insertedCount,
+      skipped: skippedCount,
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
