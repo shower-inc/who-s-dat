@@ -28,11 +28,14 @@ YouTubeの動画情報をもとに、日本の読者向けの紹介記事を書�
 - 300-500文字程度
 - アーティスト名、曲名、レーベル名、ジャンル名は英語のまま
 - 情報がない部分は無理に書かない
+- アーティスト情報が提供されている場合は、その情報を優先して使う
+- 出身地やジャンルがわかっている場合は正確に記載する
 
 ## 入力
 タイトル: {title}
 説明文: {description}
 チャンネル: {channel}
+アーティスト情報: {artistInfo}
 
 ## 出力
 紹介文のみ。`
@@ -84,9 +87,11 @@ export function formatArticleGenerationPrompt(params: {
   title: string
   description: string
   channel: string
+  artistInfo?: string
 }): string {
   return ARTICLE_GENERATION_PROMPT
     .replace('{title}', params.title)
     .replace('{description}', params.description || 'なし')
     .replace('{channel}', params.channel)
+    .replace('{artistInfo}', params.artistInfo || 'なし')
 }

@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { formatTranslatePrompt, formatPostGenerationPrompt, formatArticleGenerationPrompt } from './prompts'
+import { searchArtistInfo, extractArtistName } from '../web/search'
 
 const MODEL = 'claude-3-haiku-20240307'
 
@@ -61,7 +62,28 @@ export async function generateArticle(params: {
   channel: string
 }): Promise<{ title: string; content: string }> {
   const client = getClient()
-  const prompt = formatArticleGenerationPrompt(params)
+
+  // タイトルからアーティスト名を抽出してWeb検索
+  let artistInfoText = ''
+  const artistName = extractArtistName(params.title)
+  if (artistName) {
+    console.log(`Searching for artist: ${artistName}`)
+    const artistInfo = await searchArtistInfo(artistName)
+    if (artistInfo) {
+      const parts: string[] = []
+      parts.push(`名前: ${artistInfo.name}`)
+      if (artistInfo.origin) parts.push(`出身: ${artistInfo.origin}`)
+      if (artistInfo.genre) parts.push(`ジャンル: ${artistInfo.genre}`)
+      if (artistInfo.description) parts.push(`概要: ${artistInfo.description}`)
+      artistInfoText = parts.join('\n')
+      console.log(`Found artist info: ${artistInfo.origin || 'unknown origin'}, ${artistInfo.genre || 'unknown genre'}`)
+    }
+  }
+
+  const prompt = formatArticleGenerationPrompt({
+    ...params,
+    artistInfo: artistInfoText,
+  })
 
   const message = await client.messages.create({
     model: MODEL,
