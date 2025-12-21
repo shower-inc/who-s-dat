@@ -81,13 +81,9 @@ export default async function Home() {
                       )}
                       <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
                         {article.content_type && (
-                          <Link
-                            href={`/category/${article.content_type}`}
-                            className="px-2 py-0.5 bg-blue-900/50 text-blue-300 rounded hover:bg-blue-900 transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 rounded">
                             {CONTENT_TYPE_LABELS[article.content_type as keyof typeof CONTENT_TYPE_LABELS]}
-                          </Link>
+                          </span>
                         )}
                         <span>{(article.sources as { name: string } | null)?.name}</span>
                         {article.published_at && (
