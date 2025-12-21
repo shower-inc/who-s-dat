@@ -1,14 +1,16 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { generateArticle, generatePost } from '@/lib/llm/client'
+import { createArtistService } from '@/lib/artists/service'
 import { NextResponse } from 'next/server'
 
-// Unified API: translate article + generate X post in one call
+// Unified API: enrich → translate article → generate X post
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
   const supabase = await createServiceClient()
+  const artistService = createArtistService(supabase)
 
   // 記事を取得（ソース情報も含む）
   const { data: article, error: articleError } = await supabase
@@ -29,7 +31,19 @@ export async function POST(
   const source = article.sources as { name: string; category: string } | null
 
   try {
-    // Step 1: 翻訳（未翻訳の場合のみ）
+    // Step 1: アーティスト情報を取得（DBキャッシュ or Web検索）
+    const artist = await artistService.getOrFetchArtist(article.title_original)
+    const artistInfo = artistService.formatArtistInfo(artist)
+
+    // 記事にアーティストIDを紐付け
+    if (artist) {
+      await supabase
+        .from('articles')
+        .update({ artist_id: artist.id })
+        .eq('id', id)
+    }
+
+    // Step 2: 記事生成（未生成の場合のみ）
     let title_ja = article.title_ja
     let summary_ja = article.summary_ja
 
@@ -43,6 +57,7 @@ export async function POST(
         title: article.title_original,
         description: article.summary_original || '',
         channel: source?.name || 'Unknown',
+        artistInfo,
       })
 
       title_ja = translated.title
@@ -58,7 +73,7 @@ export async function POST(
         .eq('id', id)
     }
 
-    // Step 2: 投稿文生成
+    // Step 3: X投稿文生成
     await supabase
       .from('articles')
       .update({ status: 'generating' })

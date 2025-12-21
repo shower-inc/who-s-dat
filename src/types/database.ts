@@ -86,6 +86,7 @@ export interface Database {
           content_type: ContentType
           view_count: number | null
           like_count: number | null
+          artist_id: string | null
           created_at: string
           updated_at: string
         }
@@ -106,6 +107,7 @@ export interface Database {
           content_type?: ContentType
           view_count?: number | null
           like_count?: number | null
+          artist_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -126,6 +128,7 @@ export interface Database {
           content_type?: ContentType
           view_count?: number | null
           like_count?: number | null
+          artist_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -223,6 +226,44 @@ export interface Database {
           updated_at?: string
         }
       }
+      artists: {
+        Row: {
+          id: string
+          name: string
+          name_ja: string | null
+          origin: string | null
+          genre: string | null
+          description: string | null
+          search_source: string | null
+          verified: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          name_ja?: string | null
+          origin?: string | null
+          genre?: string | null
+          description?: string | null
+          search_source?: string | null
+          verified?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          name_ja?: string | null
+          origin?: string | null
+          genre?: string | null
+          description?: string | null
+          search_source?: string | null
+          verified?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -232,3 +273,4 @@ export type Article = Database['public']['Tables']['articles']['Row']
 export type Post = Database['public']['Tables']['posts']['Row']
 export type FetchLog = Database['public']['Tables']['fetch_logs']['Row']
 export type Setting = Database['public']['Tables']['settings']['Row']
+export type Artist = Database['public']['Tables']['artists']['Row']
