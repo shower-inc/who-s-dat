@@ -3,6 +3,13 @@
 import { Article, Post, ContentType, CONTENT_TYPE_LABELS, CONTENT_TYPE_ICONS, CONTENT_TYPES, Tag } from '@/types/database'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
+
+// Tiptapはクライアントサイドのみで動作
+const RichTextEditor = dynamic(
+  () => import('@/components/editor/rich-text-editor').then(mod => mod.RichTextEditor),
+  { ssr: false, loading: () => <div className="h-48 bg-gray-800 rounded-lg animate-pulse" /> }
+)
 
 type ArticleWithSourceAndPosts = Article & {
   sources: { name: string; category: string } | null
@@ -785,14 +792,16 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                要約（日本語）
+                本文（日本語） - リンク、太字、リストなどを使用可能
               </label>
-              <textarea
-                value={editForm.summary_ja}
-                onChange={(e) => setEditForm({ ...editForm, summary_ja: e.target.value })}
-                rows={4}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <RichTextEditor
+                content={editForm.summary_ja}
+                onChange={(content) => setEditForm({ ...editForm, summary_ja: content })}
+                placeholder="記事の本文を入力..."
               />
+              <p className="text-xs text-gray-500 mt-1">
+                テキストを選択してリンクボタンでURLを挿入できます
+              </p>
             </div>
 
             <div className="mb-4">
