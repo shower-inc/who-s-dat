@@ -474,6 +474,17 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                     </button>
                   )}
 
+                  {canUnpublish && (
+                    <a
+                      href={`/article/${article.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 text-sm bg-teal-700 hover:bg-teal-600 text-white rounded transition-colors"
+                    >
+                      サイトで見る
+                    </a>
+                  )}
+
                   <a
                     href={article.link}
                     target="_blank"
