@@ -56,7 +56,11 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   // フィルター
   const [contentTypeFilter, setContentTypeFilter] = useState<ContentType | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [tagFilter, setTagFilter] = useState<string>('all')
+
+  // カテゴリ一覧を記事から抽出
+  const categories = [...new Set(articles.map(a => a.sources?.category).filter(Boolean))] as string[]
 
   // 記事編集モーダル
   const [editingArticle, setEditingArticle] = useState<ArticleWithSourceAndPosts | null>(null)
@@ -65,6 +69,10 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   // 投稿文編集モーダル
   const [editingPost, setEditingPost] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)
   const [postContent, setPostContent] = useState('')
+
+  // X投稿作成モーダル
+  const [xPostModal, setXPostModal] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)
+  const [copied, setCopied] = useState(false)
 
   // インラインコメント入力
   const [inlineNotes, setInlineNotes] = useState<Record<string, string>>({})
@@ -277,32 +285,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setAction(null)
   }
 
-  const postToX = async (article: ArticleWithSourceAndPosts, repost: boolean = false) => {
-    const post = article.posts.find(p => p.platform === 'x')
-    if (!post) return
-
-    if (repost && !confirm('この記事を再度Xに投稿しますか？\n（既に投稿済みの場合、重複投稿になる可能性があります）')) {
-      return
-    }
-
-    setLoading(article.id)
-    setAction('posting')
-    try {
-      const res = await fetch(`/api/posts/${post.id}/post`, { method: 'POST' })
-      const data = await res.json()
-      if (data.error) {
-        alert(`Error: ${data.error}`)
-      } else {
-        alert('Xに投稿しました！')
-      }
-    } catch {
-      alert('X投稿に失敗しました')
-    }
-    router.refresh()
-    setLoading(null)
-    setAction(null)
-  }
-
   const skipArticle = async (id: string) => {
     setLoading(id)
     setAction('skipping')
@@ -368,6 +350,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   const filteredArticles = articles.filter(article => {
     if (contentTypeFilter !== 'all' && article.content_type !== contentTypeFilter) return false
     if (statusFilter !== 'all' && article.status !== statusFilter) return false
+    if (categoryFilter !== 'all' && article.sources?.category !== categoryFilter) return false
     if (tagFilter !== 'all') {
       const articleTagIds = getArticleTags(article).map(t => t.id)
       if (!articleTagIds.includes(tagFilter)) return false
@@ -416,6 +399,20 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
         </div>
 
         <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-400">カテゴリ:</label>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">すべて</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
           <label className="text-sm text-gray-400">タグ:</label>
           <select
             value={tagFilter}
@@ -439,9 +436,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
         const canProcess = ['pending', 'translated', 'published'].includes(article.status)
         const canPublish = ['translated', 'ready'].includes(article.status) && article.status !== 'published' && article.status !== 'posted'
         const canUnpublish = ['published', 'posted'].includes(article.status)
-        const canPostToX = xPost && xPost.status !== 'posted'
         const canSkip = ['pending', 'translated', 'ready'].includes(article.status)
-        const isPosted = article.status === 'posted' || xPost?.status === 'posted'
         const isProcessing = processStatus?.id === article.id && !['done', 'error'].includes(processStatus.step)
 
         return (
@@ -686,23 +681,16 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                     </button>
                   )}
 
-                  {canPostToX && (
+                  {/* X投稿作成ボタン（テキストと画像を表示するモーダルを開く） */}
+                  {xPost && (
                     <button
-                      onClick={() => postToX(article)}
-                      disabled={loading === article.id}
-                      className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded transition-colors"
+                      onClick={() => {
+                        setXPostModal({ article, post: xPost })
+                        setCopied(false)
+                      }}
+                      className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
                     >
-                      {loading === article.id && action === 'posting' ? '投稿中...' : 'Xに投稿'}
-                    </button>
-                  )}
-
-                  {isPosted && xPost && (
-                    <button
-                      onClick={() => postToX(article, true)}
-                      disabled={loading === article.id}
-                      className="px-3 py-1.5 text-sm bg-blue-800 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded transition-colors"
-                    >
-                      {loading === article.id && action === 'posting' ? '投稿中...' : 'Xに再投稿'}
+                      X投稿作成
                     </button>
                   )}
 
@@ -942,6 +930,97 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                 キャンセル
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* X投稿作成モーダル */}
+      {xPostModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-white mb-4">X投稿作成</h3>
+
+            {/* サムネイル画像 */}
+            {(() => {
+              const article = xPostModal.article
+              let thumbnailUrl = article.thumbnail_url
+              if (!thumbnailUrl && article.link) {
+                const match = article.link.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)
+                if (match) {
+                  thumbnailUrl = `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg`
+                }
+              }
+              return thumbnailUrl ? (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-400 mb-2">画像（右クリックで保存してXに添付）</p>
+                  <img
+                    src={thumbnailUrl}
+                    alt="サムネイル"
+                    className="w-full max-w-md rounded-lg border border-gray-700"
+                  />
+                  <a
+                    href={thumbnailUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-2 text-sm text-blue-400 hover:text-blue-300"
+                  >
+                    画像を別タブで開く
+                  </a>
+                </div>
+              ) : null
+            })()}
+
+            {/* 投稿テキスト */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-400">投稿テキスト</p>
+                <button
+                  onClick={() => {
+                    const article = xPostModal.article
+                    const baseUrl = window.location.origin
+                    const articleLink = `${baseUrl}/article/${article.id}`
+                    const fullText = `${xPostModal.post.content}\n\n${articleLink}`
+                    navigator.clipboard.writeText(fullText)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  }}
+                  className={`px-3 py-1 text-sm rounded transition-colors ${
+                    copied
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-700 hover:bg-gray-600 text-white'
+                  }`}
+                >
+                  {copied ? 'コピーしました' : 'コピー'}
+                </button>
+              </div>
+              <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+                <p className="text-white whitespace-pre-wrap">{xPostModal.post.content}</p>
+                <p className="text-blue-400 mt-2">{window.location.origin}/article/{xPostModal.article.id}</p>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">{xPostModal.post.content.length} 文字（リンク含まず）</p>
+            </div>
+
+            {/* Xで投稿ボタン */}
+            <div className="flex gap-3">
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(xPostModal.post.content + '\n\n' + window.location.origin + '/article/' + xPostModal.article.id)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Xで投稿（テキストのみ）
+              </a>
+              <button
+                onClick={() => setXPostModal(null)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                閉じる
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-4">
+              画像付きで投稿する場合：上の画像を保存 → Xアプリで投稿 → 画像を添付
+            </p>
           </div>
         </div>
       )}

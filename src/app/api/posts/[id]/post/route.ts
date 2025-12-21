@@ -58,10 +58,19 @@ export async function POST(
       }
     }
 
-    // X APIで投稿（画像がある場合は画像付き）
-    const result = thumbnailUrl
-      ? await postTweetWithImage(text, thumbnailUrl)
-      : await postTweet(text)
+    // X APIで投稿（画像がある場合は画像付き、失敗時はテキストのみ）
+    let result
+    if (thumbnailUrl) {
+      try {
+        result = await postTweetWithImage(text, thumbnailUrl)
+      } catch (imageError) {
+        console.warn('Image upload failed, posting without image:', imageError)
+        // 画像アップロード失敗時はテキストのみで投稿
+        result = await postTweet(text)
+      }
+    } else {
+      result = await postTweet(text)
+    }
 
     // ステータスを更新
     await supabase
