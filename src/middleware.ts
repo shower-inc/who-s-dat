@@ -1,60 +1,49 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+// Basic認証の認証情報
+const BASIC_AUTH_USER = process.env.BASIC_AUTH_USER || 'shower'
+const BASIC_AUTH_PASS = process.env.BASIC_AUTH_PASS || 'novasound'
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // 管理画面（/admin/*）は認証必要
-  const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
-
-  // 未認証で管理画面にアクセスした場合、ログインにリダイレクト
-  if (!user && isAdminPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+function isAuthenticated(request: NextRequest): boolean {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
+    return false
   }
 
-  // 認証済みでログインページにアクセスした場合、管理画面ダッシュボードにリダイレクト
-  if (user && request.nextUrl.pathname === '/login') {
+  const base64Credentials = authHeader.split(' ')[1]
+  const credentials = atob(base64Credentials)
+  const [username, password] = credentials.split(':')
+
+  return username === BASIC_AUTH_USER && password === BASIC_AUTH_PASS
+}
+
+export async function middleware(request: NextRequest) {
+  // 管理画面（/admin/*）のみBasic認証を適用
+  const isAdminPage = request.nextUrl.pathname.startsWith('/admin')
+
+  if (isAdminPage) {
+    if (!isAuthenticated(request)) {
+      return new NextResponse('Authentication required', {
+        status: 401,
+        headers: {
+          'WWW-Authenticate': 'Basic realm="Admin Area"',
+        },
+      })
+    }
+  }
+
+  // /login ページは不要になったので、アクセスしたらダッシュボードにリダイレクト
+  if (request.nextUrl.pathname === '/login') {
     const url = request.nextUrl.clone()
     url.pathname = '/admin/dashboard'
     return NextResponse.redirect(url)
   }
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
