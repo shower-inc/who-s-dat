@@ -267,6 +267,55 @@ export interface Database {
           updated_at?: string
         }
       }
+      tags: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          color: string
+          description: string | null
+          article_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          color?: string
+          description?: string | null
+          article_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          color?: string
+          description?: string | null
+          article_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      article_tags: {
+        Row: {
+          article_id: string
+          tag_id: string
+          created_at: string
+        }
+        Insert: {
+          article_id: string
+          tag_id: string
+          created_at?: string
+        }
+        Update: {
+          article_id?: string
+          tag_id?: string
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -277,3 +326,10 @@ export type Post = Database['public']['Tables']['posts']['Row']
 export type FetchLog = Database['public']['Tables']['fetch_logs']['Row']
 export type Setting = Database['public']['Tables']['settings']['Row']
 export type Artist = Database['public']['Tables']['artists']['Row']
+export type Tag = Database['public']['Tables']['tags']['Row']
+export type ArticleTag = Database['public']['Tables']['article_tags']['Row']
+
+// Article with tags for display
+export type ArticleWithTags = Article & {
+  tags?: Tag[]
+}

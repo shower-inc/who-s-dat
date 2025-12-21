@@ -164,9 +164,13 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setAction(null)
   }
 
-  const postToX = async (article: ArticleWithSourceAndPosts) => {
-    const post = article.posts.find(p => p.platform === 'x' && p.status !== 'posted')
+  const postToX = async (article: ArticleWithSourceAndPosts, repost: boolean = false) => {
+    const post = article.posts.find(p => p.platform === 'x')
     if (!post) return
+
+    if (repost && !confirm('この記事を再度Xに投稿しますか？\n（既に投稿済みの場合、重複投稿になる可能性があります）')) {
+      return
+    }
 
     setLoading(article.id)
     setAction('posting')
@@ -432,7 +436,17 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                     </button>
                   )}
 
-                  {xPost && !isPosted && (
+                  {isPosted && xPost && (
+                    <button
+                      onClick={() => postToX(article, true)}
+                      disabled={loading === article.id}
+                      className="px-3 py-1.5 text-sm bg-blue-800 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded transition-colors"
+                    >
+                      {loading === article.id && action === 'posting' ? '投稿中...' : 'Xに再投稿'}
+                    </button>
+                  )}
+
+                  {xPost && (
                     <button
                       onClick={() => startEditPost(article, xPost)}
                       className="px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors"
