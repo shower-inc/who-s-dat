@@ -60,7 +60,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
   // 記事編集モーダル
   const [editingArticle, setEditingArticle] = useState<ArticleWithSourceAndPosts | null>(null)
-  const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '', content_type: 'news' as ContentType, editor_note: '' })
+  const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '', content_type: 'news' as ContentType })
 
   // 投稿文編集モーダル
   const [editingPost, setEditingPost] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)
@@ -68,6 +68,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
   // インラインコメント入力
   const [inlineNotes, setInlineNotes] = useState<Record<string, string>>({})
+  const [showCommentInput, setShowCommentInput] = useState<string | null>(null)
 
   // タグ関連
   const [allTags, setAllTags] = useState<Tag[]>([])
@@ -167,7 +168,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       title_ja: article.title_ja || '',
       summary_ja: article.summary_ja || '',
       content_type: article.content_type || 'news',
-      editor_note: (article as ArticleWithSourceAndPosts & { editor_note?: string }).editor_note || '',
     })
   }
 
@@ -437,7 +437,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       {filteredArticles.map((article) => {
         const xPost = getXPost(article)
         const canProcess = ['pending', 'translated', 'published'].includes(article.status)
-        const canRegenerate = xPost && ['translated', 'ready', 'published', 'posted'].includes(article.status)
         const canPublish = ['translated', 'ready'].includes(article.status) && article.status !== 'published' && article.status !== 'posted'
         const canUnpublish = ['published', 'posted'].includes(article.status)
         const canPostToX = xPost && xPost.status !== 'posted'
@@ -509,8 +508,8 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                   </span>
                 </div>
 
-                {/* インラインコメント入力（翻訳済みの場合常に表示） */}
-                {article.status === 'translated' && (
+                {/* コメント入力欄（ボタンで展開） */}
+                {showCommentInput === article.id && (
                   <div className="mt-4 p-3 bg-purple-900/20 border border-purple-800/50 rounded-lg">
                     <label className="block text-xs text-purple-300 mb-2">
                       編集者コメント（記事・X投稿に反映）
@@ -522,18 +521,37 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                         onChange={(e) => setInlineNotes(prev => ({ ...prev, [article.id]: e.target.value }))}
                         placeholder="例: 前回紹介したアーティスト / MVが良い"
                         className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-600"
+                        autoFocus
                       />
                       <button
-                        onClick={() => processArticle(article.id, inlineNotes[article.id])}
-                        disabled={loading === article.id}
-                        className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2 whitespace-nowrap"
+                        onClick={async () => {
+                          const note = inlineNotes[article.id]
+                          if (note) {
+                            await fetch(`/api/articles/${article.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ editor_note: note }),
+                            })
+                          }
+                          setShowCommentInput(null)
+                          router.refresh()
+                        }}
+                        className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors whitespace-nowrap"
                       >
-                        {isProcessing && (
-                          <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        )}
-                        {isProcessing ? '生成中...' : '生成'}
+                        保存
+                      </button>
+                      <button
+                        onClick={() => setShowCommentInput(null)}
+                        className="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                      >
+                        ✕
                       </button>
                     </div>
+                    {(article as ArticleWithSourceAndPosts & { editor_note?: string }).editor_note && (
+                      <p className="text-xs text-purple-400 mt-2">
+                        現在のコメント: {(article as ArticleWithSourceAndPosts & { editor_note?: string }).editor_note}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -571,10 +589,31 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
                 {/* アクションボタン */}
                 <div className="flex flex-wrap items-center gap-2 mt-4">
-                  {/* pending状態の記事には生成ボタンを表示（コメント入力なし） */}
+                  {/* コメント入力ボタン（常に表示） */}
+                  <button
+                    onClick={() => {
+                      setShowCommentInput(showCommentInput === article.id ? null : article.id)
+                      // 既存のコメントをセット
+                      const existingNote = (article as ArticleWithSourceAndPosts & { editor_note?: string }).editor_note
+                      if (existingNote && !inlineNotes[article.id]) {
+                        setInlineNotes(prev => ({ ...prev, [article.id]: existingNote }))
+                      }
+                    }}
+                    className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                      showCommentInput === article.id
+                        ? 'bg-purple-600 text-white'
+                        : (article as ArticleWithSourceAndPosts & { editor_note?: string }).editor_note
+                          ? 'bg-purple-900 text-purple-300 border border-purple-700'
+                          : 'bg-gray-700 hover:bg-gray-600 text-white'
+                    }`}
+                  >
+                    {(article as ArticleWithSourceAndPosts & { editor_note?: string }).editor_note ? 'コメント編集' : 'コメント入力'}
+                  </button>
+
+                  {/* pending状態の記事には生成ボタンを表示 */}
                   {article.status === 'pending' && (
                     <button
-                      onClick={() => processArticle(article.id)}
+                      onClick={() => processArticle(article.id, inlineNotes[article.id])}
                       disabled={loading === article.id}
                       className="px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
                     >
@@ -585,11 +624,40 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                     </button>
                   )}
 
-                  {canRegenerate && (
+                  {/* translated状態の記事には生成ボタンを表示 */}
+                  {article.status === 'translated' && (
                     <button
-                      onClick={() => processArticle(article.id)}
+                      onClick={() => processArticle(article.id, inlineNotes[article.id])}
+                      disabled={loading === article.id}
+                      className="px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
+                    >
+                      {isProcessing && (
+                        <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      )}
+                      {isProcessing ? processStatus?.message : '生成'}
+                    </button>
+                  )}
+
+                  {/* 記事を再生成ボタン（記事生成済みの場合） */}
+                  {article.summary_ja && ['ready', 'published', 'posted'].includes(article.status) && (
+                    <button
+                      onClick={() => processArticle(article.id, inlineNotes[article.id])}
                       disabled={loading === article.id}
                       className="px-3 py-1.5 text-sm bg-purple-800 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
+                    >
+                      {isProcessing && (
+                        <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      )}
+                      {isProcessing ? processStatus?.message : '記事を再生成'}
+                    </button>
+                  )}
+
+                  {/* X投稿文を再生成ボタン */}
+                  {xPost && ['ready', 'published', 'posted'].includes(article.status) && (
+                    <button
+                      onClick={() => processArticle(article.id, inlineNotes[article.id])}
+                      disabled={loading === article.id}
+                      className="px-3 py-1.5 text-sm bg-indigo-800 hover:bg-indigo-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
                     >
                       {isProcessing && (
                         <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -743,23 +811,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                   <option key={type} value={type}>{CONTENT_TYPE_LABELS[type]}</option>
                 ))}
               </select>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                編集者コメント
-                <span className="text-gray-500 font-normal ml-2">（記事・投稿生成に反映）</span>
-              </label>
-              <textarea
-                value={editForm.editor_note}
-                onChange={(e) => setEditForm({ ...editForm, editor_note: e.target.value })}
-                rows={3}
-                placeholder="例: 前回紹介したアーティスト / MVの映像が良い / UK Drillシーンの文脈で紹介"
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-600"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                このコメントは記事生成・X投稿生成時にLLMへの指示として使われます
-              </p>
             </div>
 
             <div className="flex gap-3">
