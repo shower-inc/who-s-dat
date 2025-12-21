@@ -33,10 +33,8 @@ export async function POST(request: Request) {
 
       const source = article.sources as { name: string; category: string } | null
       const postContent = await generatePost({
-        title: article.title_original,
-        title_ja: article.title_ja || '',
-        summary: article.summary_original || '',
-        source: source?.name || 'Unknown',
+        title: article.title_ja || article.title_original,
+        summary: article.summary_ja || article.summary_original || '',
         category: source?.category || 'music',
       })
 
@@ -45,7 +43,7 @@ export async function POST(request: Request) {
         content: postContent,
         content_style: 'casual',
         llm_model: 'claude-3-haiku-20240307',
-        llm_prompt_version: 'v1',
+        llm_prompt_version: 'v2',
         platform: 'x',
         status: 'draft',
       })
