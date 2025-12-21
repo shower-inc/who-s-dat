@@ -14,6 +14,7 @@ const statusColors: Record<string, string> = {
   translated: 'bg-purple-900 text-purple-300',
   generating: 'bg-indigo-900 text-indigo-300',
   ready: 'bg-green-900 text-green-300',
+  published: 'bg-teal-900 text-teal-300',
   scheduled: 'bg-cyan-900 text-cyan-300',
   posted: 'bg-emerald-900 text-emerald-300',
   skipped: 'bg-gray-700 text-gray-300',
@@ -26,8 +27,9 @@ const statusLabels: Record<string, string> = {
   translated: '翻訳済',
   generating: '生成中',
   ready: '準備完了',
+  published: '公開中',
   scheduled: '予約済',
-  posted: '投稿済',
+  posted: 'X投稿済',
   skipped: 'スキップ',
   error: 'エラー',
 }
@@ -42,6 +44,38 @@ function formatCount(count: number | null): string {
 export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [editingArticle, setEditingArticle] = useState<ArticleWithSource | null>(null)
+  const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '' })
+
+  const startEdit = (article: ArticleWithSource) => {
+    setEditingArticle(article)
+    setEditForm({
+      title_ja: article.title_ja || '',
+      summary_ja: article.summary_ja || '',
+    })
+  }
+
+  const saveEdit = async () => {
+    if (!editingArticle) return
+    setLoading(editingArticle.id)
+    try {
+      const res = await fetch(`/api/articles/${editingArticle.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      })
+      const data = await res.json()
+      if (data.error) {
+        alert(`Error: ${data.error}`)
+      } else {
+        setEditingArticle(null)
+      }
+    } catch {
+      alert('保存に失敗しました')
+    }
+    router.refresh()
+    setLoading(null)
+  }
 
   const translateArticle = async (id: string) => {
     setLoading(id)
@@ -70,6 +104,21 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
       }
     } catch {
       alert('投稿文の生成に失敗しました')
+    }
+    router.refresh()
+    setLoading(null)
+  }
+
+  const skipArticle = async (id: string) => {
+    setLoading(id)
+    try {
+      const res = await fetch(`/api/articles/${id}/skip`, { method: 'POST' })
+      const data = await res.json()
+      if (data.error) {
+        alert(`Error: ${data.error}`)
+      }
+    } catch {
+      alert('スキップに失敗しました')
     }
     router.refresh()
     setLoading(null)
@@ -147,6 +196,23 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
                     {loading === article.id ? '生成中...' : '投稿文を生成'}
                   </button>
                 )}
+                {article.title_ja && (
+                  <button
+                    onClick={() => startEdit(article)}
+                    className="px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors"
+                  >
+                    編集
+                  </button>
+                )}
+                {article.status === 'pending' && (
+                  <button
+                    onClick={() => skipArticle(article.id)}
+                    disabled={loading === article.id}
+                    className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                  >
+                    スキップ
+                  </button>
+                )}
                 <a
                   href={article.link}
                   target="_blank"
@@ -160,6 +226,55 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
           </div>
         </div>
       ))}
+
+      {/* 編集モーダル */}
+      {editingArticle && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-white mb-4">記事を編集</h3>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                タイトル（日本語）
+              </label>
+              <input
+                type="text"
+                value={editForm.title_ja}
+                onChange={(e) => setEditForm({ ...editForm, title_ja: e.target.value })}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                要約（日本語）
+              </label>
+              <textarea
+                value={editForm.summary_ja}
+                onChange={(e) => setEditForm({ ...editForm, summary_ja: e.target.value })}
+                rows={4}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={saveEdit}
+                disabled={loading === editingArticle.id}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                {loading === editingArticle.id ? '保存中...' : '保存'}
+              </button>
+              <button
+                onClick={() => setEditingArticle(null)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -9,7 +9,7 @@ export default async function Home() {
   const { data: articles } = await supabase
     .from('articles')
     .select('*, sources(name)')
-    .eq('status', 'posted')
+    .in('status', ['published', 'posted'])
     .order('published_at', { ascending: false })
     .limit(20)
 

@@ -35,6 +35,37 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [action, setAction] = useState<string | null>(null)
+  const [editingPost, setEditingPost] = useState<PostWithArticle | null>(null)
+  const [editContent, setEditContent] = useState('')
+
+  const startEdit = (post: PostWithArticle) => {
+    setEditingPost(post)
+    setEditContent(post.content)
+  }
+
+  const saveEdit = async () => {
+    if (!editingPost) return
+    setLoading(editingPost.id)
+    setAction('saving')
+    try {
+      const res = await fetch(`/api/posts/${editingPost.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editContent }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        alert(`Error: ${data.error}`)
+      } else {
+        setEditingPost(null)
+      }
+    } catch {
+      alert('保存に失敗しました')
+    }
+    router.refresh()
+    setLoading(null)
+    setAction(null)
+  }
 
   const postToX = async (id: string) => {
     setLoading(id)
@@ -110,6 +141,12 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
 
           {(post.status === 'draft' || post.status === 'ready') && (
             <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => startEdit(post)}
+                className="px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors"
+              >
+                編集
+              </button>
               {post.status === 'draft' && (
                 <button
                   onClick={() => markReady(post.id)}
@@ -144,6 +181,36 @@ export function PostList({ posts }: { posts: PostWithArticle[] }) {
           )}
         </div>
       ))}
+
+      {/* 編集モーダル */}
+      {editingPost && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-lg">
+            <h3 className="text-xl font-bold text-white mb-4">投稿文を編集</h3>
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full h-40 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-sm text-gray-400 mt-2">{editContent.length} 文字</p>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={saveEdit}
+                disabled={loading === editingPost.id}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                {loading === editingPost.id && action === 'saving' ? '保存中...' : '保存'}
+              </button>
+              <button
+                onClick={() => setEditingPost(null)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
