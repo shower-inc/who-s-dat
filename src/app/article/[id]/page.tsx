@@ -38,6 +38,10 @@ export async function generateMetadata({
   const title = article.title_ja || article.title_original
   const description = article.summary_ja || ''
 
+  // 自前のOG画像プロキシを使用（外部URLより確実）
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://who-s-dat.vercel.app'
+  const ogImageUrl = article.thumbnail_url ? `${baseUrl}/api/og/${id}` : null
+
   return {
     title: `${title} | WHO'S DAT`,
     description,
@@ -45,13 +49,13 @@ export async function generateMetadata({
       title,
       description,
       type: 'article',
-      images: article.thumbnail_url ? [article.thumbnail_url] : [],
+      images: ogImageUrl ? [ogImageUrl] : [],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: article.thumbnail_url ? [article.thumbnail_url] : [],
+      images: ogImageUrl ? [ogImageUrl] : [],
     },
   }
 }
