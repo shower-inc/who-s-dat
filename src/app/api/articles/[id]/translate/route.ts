@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { generateArticle } from '@/lib/llm/client'
+import { generateArticle, detectContentType } from '@/lib/llm/client'
 import { NextResponse } from 'next/server'
 
 export async function POST(
@@ -27,28 +27,39 @@ export async function POST(
       .update({ status: 'translating' })
       .eq('id', id)
 
-    // 紹介文を生成
     const source = article.sources as { name: string } | null
-    const { title, content } = await generateArticle({
-      title: article.title_original,
-      description: article.summary_original || '',
-      channel: source?.name || 'Unknown',
-    })
+    const sourceName = source?.name || 'Unknown'
+
+    // 紹介文を生成 & content_typeを自動判定（並列実行）
+    const [articleResult, contentType] = await Promise.all([
+      generateArticle({
+        title: article.title_original,
+        description: article.summary_original || '',
+        channel: sourceName,
+      }),
+      detectContentType({
+        title: article.title_original,
+        description: article.summary_original || '',
+        source: sourceName,
+      }),
+    ])
 
     // 結果を保存
     await supabase
       .from('articles')
       .update({
-        title_ja: title,
-        summary_ja: content,
+        title_ja: articleResult.title,
+        summary_ja: articleResult.content,
+        content_type: contentType,
         status: 'translated',
       })
       .eq('id', id)
 
     return NextResponse.json({
       success: true,
-      title_ja: title,
-      summary_ja: content,
+      title_ja: articleResult.title,
+      summary_ja: articleResult.content,
+      content_type: contentType,
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'

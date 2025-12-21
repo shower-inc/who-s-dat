@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { formatTranslatePrompt, formatPostGenerationPrompt, formatArticleGenerationPrompt } from './prompts'
+import { formatTranslatePrompt, formatPostGenerationPrompt, formatArticleGenerationPrompt, formatContentTypePrompt } from './prompts'
+import type { ContentType } from '@/types/database'
 
 const MODEL = 'claude-3-haiku-20240307'
 
@@ -88,4 +89,41 @@ export async function generateArticle(params: {
     title: titleJa,
     content: content.text.trim(),
   }
+}
+
+// content_type自動判定
+export async function detectContentType(params: {
+  title: string
+  description: string
+  source: string
+}): Promise<ContentType> {
+  const client = getClient()
+  const prompt = formatContentTypePrompt(params)
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 32,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') {
+    return 'news' // デフォルト
+  }
+
+  const result = content.text.trim().toLowerCase()
+  const validTypes: ContentType[] = ['news', 'release', 'artist_feature', 'scene_culture', 'pickup_tunes']
+
+  if (validTypes.includes(result as ContentType)) {
+    return result as ContentType
+  }
+
+  // 部分一致でも判定
+  for (const type of validTypes) {
+    if (result.includes(type)) {
+      return type
+    }
+  }
+
+  return 'news' // デフォルト
 }

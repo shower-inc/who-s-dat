@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { ArticleList } from './article-list'
+import Link from 'next/link'
 
 // キャッシュを無効化
 export const dynamic = 'force-dynamic'
@@ -23,6 +24,12 @@ export default async function ArticlesPage() {
     <DashboardLayout>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-white">記事一覧</h1>
+        <Link
+          href="/admin/articles/new"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          記事を追加
+        </Link>
       </div>
 
       <ArticleList articles={articles ?? []} />

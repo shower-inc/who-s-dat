@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 const navItems = [
   { href: '/admin/dashboard', label: 'ダッシュボード', icon: '📊' },
   { href: '/admin/sources', label: 'ソース管理', icon: '📡' },
+  { href: '/admin/categories', label: 'カテゴリ管理', icon: '🏷️' },
   { href: '/admin/articles', label: '記事管理', icon: '📰' },
   { href: '/admin/posts', label: 'X投稿履歴', icon: '📤' },
   { href: '/admin/settings', label: '設定', icon: '⚙️' },

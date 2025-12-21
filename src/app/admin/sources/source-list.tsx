@@ -1,7 +1,6 @@
 'use client'
 
 import { Source } from '@/types/database'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -12,17 +11,17 @@ type FetchStatus = {
 }
 
 export function SourceList({ sources }: { sources: Source[] }) {
-  const supabase = createClient()
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [fetchStatus, setFetchStatus] = useState<FetchStatus | null>(null)
 
   const toggleEnabled = async (source: Source) => {
     setLoading(source.id)
-    await supabase
-      .from('sources')
-      .update({ enabled: !source.enabled })
-      .eq('id', source.id)
+    await fetch(`/api/admin/sources/${source.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: !source.enabled }),
+    })
     router.refresh()
     setLoading(null)
   }
@@ -30,7 +29,7 @@ export function SourceList({ sources }: { sources: Source[] }) {
   const deleteSource = async (source: Source) => {
     if (!confirm(`「${source.name}」を削除しますか？`)) return
     setLoading(source.id)
-    await supabase.from('sources').delete().eq('id', source.id)
+    await fetch(`/api/admin/sources/${source.id}`, { method: 'DELETE' })
     router.refresh()
     setLoading(null)
   }

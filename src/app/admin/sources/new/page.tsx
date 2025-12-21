@@ -2,14 +2,14 @@
 
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-const categories = [
-  'uk_afrobeats',
-  'amapiano',
-  'kuduro',
-  'afro_portuguese',
-]
+type Category = {
+  id: string
+  name: string
+  slug: string
+  color: string
+}
 
 // Recommended YouTube channels for UK/Afro-diaspora music
 const recommendedChannels = [
@@ -37,6 +37,7 @@ export default function NewSourcePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [resolving, setResolving] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
   const [channelInfo, setChannelInfo] = useState<{
     title: string
     thumbnailUrl: string | null
@@ -46,9 +47,22 @@ export default function NewSourcePage() {
     name: '',
     type: 'youtube' as 'youtube' | 'rss',
     url: '',
-    category: 'uk_afrobeats',
+    category_id: '',
     thumbnail_url: null as string | null,
   })
+  const [showNewCategory, setShowNewCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+
+  useEffect(() => {
+    fetch('/api/admin/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        setCategories(data.categories || [])
+        if (data.categories?.length > 0) {
+          setForm((prev) => ({ ...prev, category_id: data.categories[0].id }))
+        }
+      })
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,13 +145,32 @@ export default function NewSourcePage() {
 
   // Add preset channel
   const addPresetChannel = async (preset: typeof recommendedChannels[0]) => {
-    setForm(prev => ({
+    // プリセットのカテゴリslugからカテゴリIDを探す
+    const cat = categories.find((c) => c.slug === preset.category)
+    setForm((prev) => ({
       ...prev,
       name: preset.name,
-      category: preset.category,
+      category_id: cat?.id || prev.category_id,
       type: 'youtube',
     }))
     await resolveHandle(preset.handle)
+  }
+
+  // 新規カテゴリ追加
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return
+    const res = await fetch('/api/admin/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newCategoryName }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setCategories((prev) => [...prev, data.category])
+      setForm((prev) => ({ ...prev, category_id: data.category.id }))
+      setNewCategoryName('')
+      setShowNewCategory(false)
+    }
   }
 
   return (
@@ -266,17 +299,51 @@ export default function NewSourcePage() {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             カテゴリ
           </label>
-          <select
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={form.category_id}
+              onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+              className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowNewCategory(true)}
+              className="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              +
+            </button>
+          </div>
+          {showNewCategory && (
+            <div className="mt-2 flex gap-2">
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="新規カテゴリ名"
+                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white"
+              />
+              <button
+                type="button"
+                onClick={handleAddCategory}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+              >
+                追加
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowNewCategory(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded"
+              >
+                キャンセル
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-4">

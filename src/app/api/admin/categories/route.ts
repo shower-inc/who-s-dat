@@ -4,16 +4,16 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET() {
   const supabase = await createServiceClient()
 
-  const { data: sources, error } = await supabase
-    .from('sources')
-    .select('id, name, url, enabled, last_fetched_at, fetch_error')
+  const { data: categories, error } = await supabase
+    .from('categories')
+    .select('*, sources:sources(count)')
     .order('name')
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ sources })
+  return NextResponse.json({ categories })
 }
 
 export async function POST(request: NextRequest) {
@@ -21,18 +21,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { name, type, url, category_id, thumbnail_url } = body
+    const { name, slug, description, color } = body
 
-    if (!name || !type || !url || !category_id) {
-      return NextResponse.json(
-        { error: 'name, type, url, category_id are required' },
-        { status: 400 }
-      )
+    if (!name) {
+      return NextResponse.json({ error: 'name is required' }, { status: 400 })
     }
 
+    // slugが指定されていない場合は自動生成
+    const finalSlug =
+      slug || name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+
     const { data, error } = await supabase
-      .from('sources')
-      .insert([{ name, type, url, category_id, thumbnail_url }])
+      .from('categories')
+      .insert([{ name, slug: finalSlug, description, color }])
       .select()
       .single()
 
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ source: data })
+    return NextResponse.json({ category: data })
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
