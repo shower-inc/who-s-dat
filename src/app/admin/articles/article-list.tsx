@@ -1,12 +1,13 @@
 'use client'
 
-import { Article, Post, ContentType, CONTENT_TYPE_LABELS, CONTENT_TYPES } from '@/types/database'
+import { Article, Post, ContentType, CONTENT_TYPE_LABELS, CONTENT_TYPES, Tag } from '@/types/database'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 type ArticleWithSourceAndPosts = Article & {
   sources: { name: string; category: string } | null
   posts: Post[]
+  article_tags?: { tag_id: string; tags: Tag }[]
 }
 
 const statusColors: Record<string, string> = {
@@ -55,6 +56,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   // フィルター
   const [contentTypeFilter, setContentTypeFilter] = useState<ContentType | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [tagFilter, setTagFilter] = useState<string>('all')
 
   // 記事編集モーダル
   const [editingArticle, setEditingArticle] = useState<ArticleWithSourceAndPosts | null>(null)
@@ -63,6 +65,98 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   // 投稿文編集モーダル
   const [editingPost, setEditingPost] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)
   const [postContent, setPostContent] = useState('')
+
+  // タグ関連
+  const [allTags, setAllTags] = useState<Tag[]>([])
+  const [tagsLoading, setTagsLoading] = useState(false)
+  const [editingTags, setEditingTags] = useState<{ article: ArticleWithSourceAndPosts; tagIds: string[] } | null>(null)
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState('#6b7280')
+
+  // タグ一覧を取得
+  const fetchTags = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tags')
+      const data = await res.json()
+      setAllTags(data.tags || [])
+    } catch (error) {
+      console.error('Failed to fetch tags:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchTags()
+  }, [fetchTags])
+
+  // 記事のタグを取得
+  const getArticleTags = (article: ArticleWithSourceAndPosts): Tag[] => {
+    return article.article_tags?.map(at => at.tags).filter(Boolean) || []
+  }
+
+  // タグ編集開始
+  const startEditTags = (article: ArticleWithSourceAndPosts) => {
+    const currentTagIds = getArticleTags(article).map(t => t.id)
+    setEditingTags({ article, tagIds: currentTagIds })
+    setNewTagName('')
+  }
+
+  // タグ保存
+  const saveTags = async () => {
+    if (!editingTags) return
+    setTagsLoading(true)
+    try {
+      const res = await fetch(`/api/articles/${editingTags.article.id}/tags`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tagIds: editingTags.tagIds }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        alert(`Error: ${data.error}`)
+      } else {
+        setEditingTags(null)
+        router.refresh()
+      }
+    } catch {
+      alert('タグの保存に失敗しました')
+    }
+    setTagsLoading(false)
+  }
+
+  // 新規タグ作成
+  const createTag = async () => {
+    if (!newTagName.trim()) return
+    setTagsLoading(true)
+    try {
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTagName.trim(), color: newTagColor }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        alert(`Error: ${data.error}`)
+      } else if (data.tag) {
+        setAllTags([...allTags, data.tag])
+        if (editingTags) {
+          setEditingTags({ ...editingTags, tagIds: [...editingTags.tagIds, data.tag.id] })
+        }
+        setNewTagName('')
+      }
+    } catch {
+      alert('タグの作成に失敗しました')
+    }
+    setTagsLoading(false)
+  }
+
+  // タグ選択切り替え
+  const toggleTagSelection = (tagId: string) => {
+    if (!editingTags) return
+    const newTagIds = editingTags.tagIds.includes(tagId)
+      ? editingTags.tagIds.filter(id => id !== tagId)
+      : [...editingTags.tagIds, tagId]
+    setEditingTags({ ...editingTags, tagIds: newTagIds })
+  }
 
   const startEditArticle = (article: ArticleWithSourceAndPosts) => {
     setEditingArticle(article)
@@ -255,6 +349,10 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   const filteredArticles = articles.filter(article => {
     if (contentTypeFilter !== 'all' && article.content_type !== contentTypeFilter) return false
     if (statusFilter !== 'all' && article.status !== statusFilter) return false
+    if (tagFilter !== 'all') {
+      const articleTagIds = getArticleTags(article).map(t => t.id)
+      if (!articleTagIds.includes(tagFilter)) return false
+    }
     return true
   })
 
@@ -298,6 +396,20 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
           </select>
         </div>
 
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-400">タグ:</label>
+          <select
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">すべて</option>
+            {allTags.map(tag => (
+              <option key={tag.id} value={tag.id}>{tag.name} ({tag.article_count})</option>
+            ))}
+          </select>
+        </div>
+
         <div className="text-sm text-gray-500 ml-auto">
           {filteredArticles.length} / {articles.length} 件
         </div>
@@ -305,7 +417,8 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
       {filteredArticles.map((article) => {
         const xPost = getXPost(article)
-        const canProcess = ['pending', 'translated', 'published'].includes(article.status) && !xPost
+        const canProcess = ['pending', 'translated', 'published'].includes(article.status)
+        const canRegenerate = xPost && ['translated', 'ready', 'published', 'posted'].includes(article.status)
         const canPublish = ['translated', 'ready'].includes(article.status) && article.status !== 'published' && article.status !== 'posted'
         const canUnpublish = ['published', 'posted'].includes(article.status)
         const canPostToX = xPost && xPost.status !== 'posted'
@@ -353,6 +466,24 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                         </span>
                       )}
                     </div>
+                    {/* タグ表示 */}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {getArticleTags(article).map(tag => (
+                        <span
+                          key={tag.id}
+                          className="px-2 py-0.5 text-xs rounded"
+                          style={{ backgroundColor: tag.color + '30', color: tag.color, border: `1px solid ${tag.color}50` }}
+                        >
+                          #{tag.name}
+                        </span>
+                      ))}
+                      <button
+                        onClick={() => startEditTags(article)}
+                        className="px-2 py-0.5 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+                      >
+                        + タグ
+                      </button>
+                    </div>
                   </div>
                   <span className={`px-2 py-1 text-xs rounded whitespace-nowrap ${statusColors[article.status] || 'bg-gray-700 text-gray-300'}`}>
                     {statusLabels[article.status] || article.status}
@@ -393,7 +524,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
                 {/* アクションボタン */}
                 <div className="flex flex-wrap items-center gap-2 mt-4">
-                  {canProcess && (
+                  {canProcess && !xPost && (
                     <button
                       onClick={() => processArticle(article.id)}
                       disabled={loading === article.id}
@@ -403,6 +534,19 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                         <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       )}
                       {isProcessing ? processStatus?.message : '生成'}
+                    </button>
+                  )}
+
+                  {canRegenerate && (
+                    <button
+                      onClick={() => processArticle(article.id)}
+                      disabled={loading === article.id}
+                      className="px-3 py-1.5 text-sm bg-purple-800 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
+                    >
+                      {isProcessing && (
+                        <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      )}
+                      {isProcessing ? processStatus?.message : 'X投稿文を再生成'}
                     </button>
                   )}
 
@@ -593,6 +737,90 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
               </button>
               <button
                 onClick={() => setEditingPost(null)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* タグ編集モーダル */}
+      {editingTags && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-white mb-4">タグを編集</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              {editingTags.article.title_ja || editingTags.article.title_original}
+            </p>
+
+            {/* 既存タグの選択 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">タグを選択</label>
+              <div className="flex flex-wrap gap-2">
+                {allTags.map(tag => {
+                  const isSelected = editingTags.tagIds.includes(tag.id)
+                  return (
+                    <button
+                      key={tag.id}
+                      onClick={() => toggleTagSelection(tag.id)}
+                      className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                        isSelected
+                          ? 'ring-2 ring-white'
+                          : 'opacity-60 hover:opacity-100'
+                      }`}
+                      style={{
+                        backgroundColor: tag.color + '40',
+                        color: tag.color,
+                        border: `1px solid ${tag.color}`
+                      }}
+                    >
+                      #{tag.name}
+                      {isSelected && ' ✓'}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 新規タグ作成 */}
+            <div className="mb-4 p-4 bg-gray-800 rounded-lg">
+              <label className="block text-sm font-medium text-gray-300 mb-2">新しいタグを作成</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  placeholder="タグ名"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="color"
+                  value={newTagColor}
+                  onChange={(e) => setNewTagColor(e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer"
+                />
+                <button
+                  onClick={createTag}
+                  disabled={tagsLoading || !newTagName.trim()}
+                  className="px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-sm rounded transition-colors"
+                >
+                  追加
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={saveTags}
+                disabled={tagsLoading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                {tagsLoading ? '保存中...' : '保存'}
+              </button>
+              <button
+                onClick={() => setEditingTags(null)}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
               >
                 キャンセル

@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { createTagService } from '@/lib/tags/service'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { Tag, Article } from '@/types/database'
 
 export const revalidate = 60
 
@@ -71,7 +74,7 @@ export default async function ArticlePage({
 
   const { data: article } = await supabase
     .from('articles')
-    .select('*, sources(name, url)')
+    .select('*, sources(name, url), article_tags(tag_id, tags(*))')
     .eq('id', id)
     .in('status', ['published', 'posted'])
     .single()
@@ -82,6 +85,17 @@ export default async function ArticlePage({
 
   const source = article.sources as { name: string; url: string } | null
   const youtubeVideoId = extractYouTubeVideoId(article.link)
+  const articleTags = (article.article_tags as { tag_id: string; tags: Tag }[])?.map(at => at.tags).filter(Boolean) || []
+
+  // 関連記事を取得（同じタグを持つ他の記事）
+  let relatedArticles: Article[] = []
+  if (articleTags.length > 0) {
+    const serviceSupabase = await createServiceClient()
+    const tagService = createTagService(serviceSupabase)
+    relatedArticles = await tagService.getRelatedArticles(id, 4)
+    // 公開済みのみフィルタ
+    relatedArticles = relatedArticles.filter(a => ['published', 'posted'].includes(a.status))
+  }
 
   return (
     <div className="min-h-screen bg-black">
@@ -131,6 +145,26 @@ export default async function ArticlePage({
           {article.author && <span>by {article.author}</span>}
         </div>
 
+        {/* Tags */}
+        {articleTags.length > 0 && (
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            {articleTags.map(tag => (
+              <Link
+                key={tag.id}
+                href={`/?tag=${tag.slug}`}
+                className="px-3 py-1 text-sm rounded-full transition-colors hover:opacity-80"
+                style={{
+                  backgroundColor: tag.color + '30',
+                  color: tag.color,
+                  border: `1px solid ${tag.color}50`
+                }}
+              >
+                #{tag.name}
+              </Link>
+            ))}
+          </div>
+        )}
+
         {/* Content */}
         <div className="mt-8 prose prose-invert prose-lg max-w-none">
           {article.summary_ja ? (
@@ -158,6 +192,40 @@ export default async function ArticlePage({
             </svg>
           </a>
         </div>
+
+        {/* Related Articles */}
+        {relatedArticles.length > 0 && (
+          <div className="mt-12 pt-8 border-t border-gray-800">
+            <h2 className="text-xl font-bold text-white mb-6">関連記事</h2>
+            <div className="grid gap-4">
+              {relatedArticles.map(related => (
+                <Link
+                  key={related.id}
+                  href={`/article/${related.id}`}
+                  className="flex items-start gap-4 p-4 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  {related.thumbnail_url && (
+                    <img
+                      src={related.thumbnail_url}
+                      alt=""
+                      className="w-20 h-14 object-cover rounded"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-white font-medium line-clamp-2">
+                      {related.title_ja || related.title_original}
+                    </h3>
+                    {related.published_at && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        {new Date(related.published_at).toLocaleDateString('ja-JP')}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Back Link */}
         <div className="mt-8">

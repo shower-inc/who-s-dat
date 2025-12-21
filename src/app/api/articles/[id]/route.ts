@@ -42,7 +42,17 @@ export async function DELETE(
   const { id } = await params
   const supabase = await createServiceClient()
 
-  // まず関連する投稿を削除
+  // まず関連するタグを削除
+  const { error: tagsError } = await supabase
+    .from('article_tags')
+    .delete()
+    .eq('article_id', id)
+
+  if (tagsError) {
+    return NextResponse.json({ error: tagsError.message }, { status: 500 })
+  }
+
+  // 関連する投稿を削除
   const { error: postsError } = await supabase
     .from('posts')
     .delete()
