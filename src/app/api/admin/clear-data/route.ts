@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-export async function DELETE() {
+export async function POST() {
   const supabase = await createServiceClient()
 
   // Delete all posts first (foreign key constraint)
