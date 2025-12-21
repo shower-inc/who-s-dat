@@ -5,6 +5,17 @@ import type { Metadata } from 'next'
 
 export const revalidate = 60
 
+function extractYouTubeVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+  ]
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match) return match[1]
+  }
+  return null
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -65,6 +76,7 @@ export default async function ArticlePage({
   }
 
   const source = article.sources as { name: string; url: string } | null
+  const youtubeVideoId = extractYouTubeVideoId(article.link)
 
   return (
     <div className="min-h-screen bg-black">
@@ -79,8 +91,18 @@ export default async function ArticlePage({
 
       {/* Article */}
       <article className="max-w-3xl mx-auto px-4 py-8">
-        {/* Thumbnail */}
-        {article.thumbnail_url && (
+        {/* YouTube Embed or Thumbnail */}
+        {youtubeVideoId ? (
+          <div className="mb-6 rounded-xl overflow-hidden aspect-video">
+            <iframe
+              src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+              title={article.title_ja || article.title_original}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full"
+            />
+          </div>
+        ) : article.thumbnail_url && (
           <div className="mb-6 rounded-xl overflow-hidden">
             <img
               src={article.thumbnail_url}
@@ -125,7 +147,7 @@ export default async function ArticlePage({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
           >
-            <span>元記事を見る</span>
+            <span>{youtubeVideoId ? 'YouTubeで見る' : '元記事を見る'}</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>

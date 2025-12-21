@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { formatTranslatePrompt, formatPostGenerationPrompt } from './prompts'
+import { formatTranslatePrompt, formatPostGenerationPrompt, formatArticleGenerationPrompt } from './prompts'
 
 const MODEL = 'claude-3-haiku-20240307'
 
@@ -53,4 +53,32 @@ export async function generatePost(params: {
   }
 
   return content.text.trim()
+}
+
+export async function generateArticle(params: {
+  title: string
+  description: string
+  channel: string
+}): Promise<{ title: string; content: string }> {
+  const client = getClient()
+  const prompt = formatArticleGenerationPrompt(params)
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') {
+    throw new Error('Unexpected response type')
+  }
+
+  // タイトルも日本語に翻訳
+  const titleJa = await translateText(params.title)
+
+  return {
+    title: titleJa,
+    content: content.text.trim(),
+  }
 }

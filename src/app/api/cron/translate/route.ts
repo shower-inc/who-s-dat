@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { translateText } from '@/lib/llm/client'
+import { generateArticle } from '@/lib/llm/client'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -10,13 +10,13 @@ export async function POST(request: Request) {
 
   const supabase = await createServiceClient()
 
-  // 未翻訳の記事を取得（最大10件）
+  // 未処理の記事を取得（最大5件、紹介文生成は重いので少なめに）
   const { data: articles, error } = await supabase
     .from('articles')
-    .select('*')
+    .select('*, sources(name)')
     .eq('status', 'pending')
     .order('fetched_at', { ascending: false })
-    .limit(10)
+    .limit(5)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -31,17 +31,18 @@ export async function POST(request: Request) {
         .update({ status: 'translating' })
         .eq('id', article.id)
 
-      const titleJa = await translateText(article.title_original)
-      let summaryJa = null
-      if (article.summary_original) {
-        summaryJa = await translateText(article.summary_original)
-      }
+      const source = article.sources as { name: string } | null
+      const { title, content } = await generateArticle({
+        title: article.title_original,
+        description: article.summary_original || '',
+        channel: source?.name || 'Unknown',
+      })
 
       await supabase
         .from('articles')
         .update({
-          title_ja: titleJa,
-          summary_ja: summaryJa,
+          title_ja: title,
+          summary_ja: content,
           status: 'translated',
         })
         .eq('id', article.id)
@@ -59,5 +60,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ success: true, translated: results.length, results })
+  return NextResponse.json({ success: true, processed: results.length, results })
 }
