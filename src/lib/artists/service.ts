@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { Artist } from '@/types/database'
 import { searchArtistInfo, extractArtistName } from '../web/search'
+import { searchArtistWithGemini } from '../web/gemini-search'
 
 interface ArtistInsert {
   name: string
@@ -88,14 +89,24 @@ export function createArtistService(supabase: SupabaseClient<any>): ArtistServic
       return cached
     }
 
-    // 2. DBになければWeb検索
-    console.log(`Searching web for artist: ${artistName}`)
-    const searchResult = await searchArtistInfo(artistName)
+    // 2. DBになければ検索（Gemini優先、フォールバックでBrave）
+    console.log(`Searching for artist: ${artistName}`)
+
+    // まずGemini（Google検索グラウンディング）を試す
+    let searchResult = await searchArtistWithGemini(artistName)
+    let searchSource = 'gemini'
+
+    // Geminiで見つからなければBraveを試す
+    if (!searchResult) {
+      searchResult = await searchArtistInfo(artistName)
+      searchSource = 'brave'
+    }
+
     if (!searchResult) {
       // 検索結果なしでも名前だけ保存（次回検索を防ぐ）
       const saved = await saveArtist({
         name: artistName,
-        search_source: 'brave_no_result',
+        search_source: 'no_result',
       })
       return saved
     }
@@ -106,10 +117,10 @@ export function createArtistService(supabase: SupabaseClient<any>): ArtistServic
       origin: searchResult.origin,
       genre: searchResult.genre,
       description: searchResult.description,
-      search_source: 'brave',
+      search_source: searchSource,
     })
 
-    console.log(`Artist saved to DB: ${artistName} (${searchResult.origin || 'unknown'}, ${searchResult.genre || 'unknown'})`)
+    console.log(`Artist saved to DB: ${artistName} (${searchResult.origin || 'unknown'}, ${searchResult.genre || 'unknown'}) via ${searchSource}`)
     return saved
   }
 
