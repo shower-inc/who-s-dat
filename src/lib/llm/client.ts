@@ -35,9 +35,7 @@ export async function translateText(text: string): Promise<string> {
 
 export async function generatePost(params: {
   title: string
-  title_ja: string
   summary: string
-  source: string
   category: string
 }): Promise<string> {
   const client = getClient()

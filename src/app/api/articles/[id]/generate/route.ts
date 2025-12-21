@@ -34,10 +34,8 @@ export async function POST(
 
     // 投稿文を生成
     const postContent = await generatePost({
-      title: article.title_original,
-      title_ja: article.title_ja,
-      summary: article.summary_original || '',
-      source: article.sources?.name || 'Unknown',
+      title: article.title_ja || article.title_original,
+      summary: article.summary_ja || article.summary_original || '',
       category: article.sources?.category || 'music',
     })
 
@@ -49,7 +47,7 @@ export async function POST(
         content: postContent,
         content_style: 'casual',
         llm_model: 'claude-3-haiku-20240307',
-        llm_prompt_version: 'v1',
+        llm_prompt_version: 'v2',
         platform: 'x',
         status: 'draft',
       })

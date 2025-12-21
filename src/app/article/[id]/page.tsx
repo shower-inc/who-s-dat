@@ -1,8 +1,49 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 
 export const revalidate = 60
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+
+  const { data: article } = await supabase
+    .from('articles')
+    .select('title_ja, title_original, summary_ja, thumbnail_url')
+    .eq('id', id)
+    .in('status', ['published', 'posted'])
+    .single()
+
+  if (!article) {
+    return { title: 'Not Found' }
+  }
+
+  const title = article.title_ja || article.title_original
+  const description = article.summary_ja || ''
+
+  return {
+    title: `${title} | WHO'S DAT`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      images: article.thumbnail_url ? [article.thumbnail_url] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: article.thumbnail_url ? [article.thumbnail_url] : [],
+    },
+  }
+}
 
 export default async function ArticlePage({
   params,
