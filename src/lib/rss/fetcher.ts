@@ -28,14 +28,26 @@ function generateExternalId(link: string): string {
   return crypto.createHash('md5').update(link).digest('hex')
 }
 
-export async function fetchRssFeed(url: string): Promise<FetchedArticle[]> {
-  let feed
-  try {
-    feed = await parser.parseURL(url)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to fetch RSS from ${url}: ${message}`)
+async function fetchWithRetry(url: string, retries = 3, delay = 1000) {
+  let lastError: Error | null = null
+
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await parser.parseURL(url)
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error')
+      // 最後のリトライでなければ待機してリトライ
+      if (i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, delay * (i + 1)))
+      }
+    }
   }
+
+  throw new Error(`Failed to fetch RSS from ${url} after ${retries} attempts: ${lastError?.message}`)
+}
+
+export async function fetchRssFeed(url: string): Promise<FetchedArticle[]> {
+  const feed = await fetchWithRetry(url)
   const articles: FetchedArticle[] = []
 
   // YouTube動画IDを収集
