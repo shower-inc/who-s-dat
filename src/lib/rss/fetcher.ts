@@ -29,7 +29,13 @@ function generateExternalId(link: string): string {
 }
 
 export async function fetchRssFeed(url: string): Promise<FetchedArticle[]> {
-  const feed = await parser.parseURL(url)
+  let feed
+  try {
+    feed = await parser.parseURL(url)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to fetch RSS from ${url}: ${message}`)
+  }
   const articles: FetchedArticle[] = []
 
   // YouTube動画IDを収集
