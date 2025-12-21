@@ -261,7 +261,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       {articles.map((article) => {
         const xPost = getXPost(article)
         const canTranslate = article.status === 'pending'
-        const canGenerate = article.status === 'translated' && !xPost
+        const canGenerate = ['translated', 'published'].includes(article.status) && !xPost
         const canPublish = ['translated', 'ready'].includes(article.status) && article.status !== 'published' && article.status !== 'posted'
         const canUnpublish = ['published', 'posted'].includes(article.status)
         const canPostToX = xPost && xPost.status !== 'posted'
