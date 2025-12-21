@@ -46,5 +46,22 @@ jobs:
             exit 1
           fi
 
-      # 投稿文生成と投稿は手動承認制のためスキップ
-      # 管理画面で記事を選んで「Generate Post」→「Post to Buffer」を実行
+      - name: Wait before generate
+        run: sleep 30
+
+      - name: Generate posts
+        run: |
+          echo "Generating posts..."
+          response=$(curl -s -w "\n%{http_code}" -X POST "$VERCEL_URL/api/cron/generate" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "Response: $body"
+          if [ "$http_code" != "200" ]; then
+            echo "Generate failed with status $http_code"
+            exit 1
+          fi
+
+      # 投稿は管理画面で手動承認後に実行
+      # draft → ready に変更した投稿のみが投稿対象

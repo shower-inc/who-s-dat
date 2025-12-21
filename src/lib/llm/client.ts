@@ -18,12 +18,13 @@ export async function translateText(text: string): Promise<string> {
   }
 
   const client = getClient()
-  const prompt = formatTranslatePrompt(text)
+  const { system, user } = formatTranslatePrompt(text)
 
   const message = await client.messages.create({
     model: MODEL,
     max_tokens: 1024,
-    messages: [{ role: 'user', content: prompt }],
+    system,
+    messages: [{ role: 'user', content: user }],
   })
 
   const content = message.content[0]
@@ -40,12 +41,13 @@ export async function generatePost(params: {
   category: string
 }): Promise<string> {
   const client = getClient()
-  const prompt = formatPostGenerationPrompt(params)
+  const { system, user } = formatPostGenerationPrompt(params)
 
   const message = await client.messages.create({
     model: MODEL,
     max_tokens: 512,
-    messages: [{ role: 'user', content: prompt }],
+    system,
+    messages: [{ role: 'user', content: user }],
   })
 
   const content = message.content[0]
