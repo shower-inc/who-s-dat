@@ -29,7 +29,15 @@ export function SourceList({ sources }: { sources: Source[] }) {
   const deleteSource = async (source: Source) => {
     if (!confirm(`「${source.name}」を削除しますか？`)) return
     setLoading(source.id)
-    await fetch(`/api/admin/sources/${source.id}`, { method: 'DELETE' })
+    try {
+      const res = await fetch(`/api/admin/sources/${source.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(`削除エラー: ${data.error}`)
+      }
+    } catch (err) {
+      alert(`削除エラー: ${err}`)
+    }
     router.refresh()
     setLoading(null)
   }
