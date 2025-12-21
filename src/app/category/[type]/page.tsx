@@ -1,18 +1,45 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { CONTENT_TYPE_LABELS, CONTENT_TYPES } from '@/types/database'
+import { notFound } from 'next/navigation'
+import { CONTENT_TYPE_LABELS, CONTENT_TYPES, ContentType } from '@/types/database'
 
-export const revalidate = 60 // 1分ごとに再検証
+export const revalidate = 60
+export const dynamicParams = true // 静的生成されていないパラメータも許可
 
-export default async function Home() {
+export async function generateStaticParams() {
+  return CONTENT_TYPES.map((type) => ({ type }))
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ type: string }> }) {
+  const { type } = await params
+  if (!CONTENT_TYPES.includes(type as ContentType)) {
+    return { title: 'Not Found' }
+  }
+  const label = CONTENT_TYPE_LABELS[type as ContentType]
+  return {
+    title: `${label} | WHO'S DAT`,
+    description: `${label}の最新記事一覧`,
+  }
+}
+
+export default async function CategoryPage({ params }: { params: Promise<{ type: string }> }) {
+  const { type } = await params
+
+  if (!CONTENT_TYPES.includes(type as ContentType)) {
+    notFound()
+  }
+
   const supabase = await createClient()
 
   const { data: articles } = await supabase
     .from('articles')
     .select('*, sources(name)')
+    .eq('content_type', type)
     .in('status', ['published', 'posted'])
     .order('published_at', { ascending: false })
-    .limit(20)
+    .limit(50)
+
+  const categoryLabel = CONTENT_TYPE_LABELS[type as ContentType]
 
   return (
     <div className="min-h-screen bg-black">
@@ -32,25 +59,35 @@ export default async function Home() {
           <div className="flex gap-1 overflow-x-auto py-3 scrollbar-hide">
             <Link
               href="/"
-              className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-full whitespace-nowrap hover:bg-gray-700 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white rounded-full whitespace-nowrap hover:bg-gray-800 transition-colors"
             >
               All
             </Link>
-            {CONTENT_TYPES.map((type) => (
+            {CONTENT_TYPES.map((t) => (
               <Link
-                key={type}
-                href={`/category/${type}`}
-                className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white rounded-full whitespace-nowrap hover:bg-gray-800 transition-colors"
+                key={t}
+                href={`/category/${t}`}
+                className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
+                  t === type
+                    ? 'text-white bg-gray-800'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
               >
-                {CONTENT_TYPE_LABELS[type]}
+                {CONTENT_TYPE_LABELS[t]}
               </Link>
             ))}
           </div>
         </div>
       </nav>
 
+      {/* Category Title */}
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold text-white">{categoryLabel}</h2>
+        <p className="text-gray-500 text-sm mt-1">{articles?.length || 0} 件の記事</p>
+      </div>
+
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-4 pb-8">
         {articles && articles.length > 0 ? (
           <div className="space-y-8">
             {articles.map((article) => (
@@ -67,24 +104,15 @@ export default async function Home() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors line-clamp-2">
+                      <h3 className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors line-clamp-2">
                         {article.title_ja || article.title_original}
-                      </h2>
+                      </h3>
                       {article.summary_ja && (
                         <p className="mt-2 text-gray-400 text-sm line-clamp-2">
                           {article.summary_ja}
                         </p>
                       )}
                       <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
-                        {article.content_type && (
-                          <Link
-                            href={`/category/${article.content_type}`}
-                            className="px-2 py-0.5 bg-blue-900/50 text-blue-300 rounded hover:bg-blue-900 transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {CONTENT_TYPE_LABELS[article.content_type as keyof typeof CONTENT_TYPE_LABELS]}
-                          </Link>
-                        )}
                         <span>{(article.sources as { name: string } | null)?.name}</span>
                         {article.published_at && (
                           <span>{new Date(article.published_at).toLocaleDateString('ja-JP')}</span>
@@ -98,7 +126,10 @@ export default async function Home() {
           </div>
         ) : (
           <div className="text-center py-16">
-            <p className="text-gray-500">No articles yet</p>
+            <p className="text-gray-500">このカテゴリーにはまだ記事がありません</p>
+            <Link href="/" className="text-blue-400 hover:text-blue-300 mt-4 inline-block">
+              トップページに戻る
+            </Link>
           </div>
         )}
       </main>

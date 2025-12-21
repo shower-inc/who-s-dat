@@ -40,10 +40,17 @@ function formatCount(count: number | null): string {
   return count.toString()
 }
 
+type ProcessStatus = {
+  id: string
+  step: 'translating' | 'generating' | 'done' | 'error'
+  message: string
+}
+
 export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[] }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [action, setAction] = useState<string | null>(null)
+  const [processStatus, setProcessStatus] = useState<ProcessStatus | null>(null)
 
   // フィルター
   const [contentTypeFilter, setContentTypeFilter] = useState<ContentType | 'all'>('all')
@@ -119,38 +126,25 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setAction(null)
   }
 
-  const translateArticle = async (id: string) => {
+  const processArticle = async (id: string) => {
     setLoading(id)
-    setAction('translating')
+    setProcessStatus({ id, step: 'translating', message: '翻訳中...' })
     try {
-      const res = await fetch(`/api/articles/${id}/translate`, { method: 'POST' })
+      const res = await fetch(`/api/articles/${id}/process`, { method: 'POST' })
       const data = await res.json()
       if (data.error) {
-        alert(`Error: ${data.error}`)
+        setProcessStatus({ id, step: 'error', message: data.error })
+        setTimeout(() => setProcessStatus(null), 5000)
+      } else {
+        setProcessStatus({ id, step: 'done', message: '生成完了' })
+        setTimeout(() => setProcessStatus(null), 3000)
       }
     } catch {
-      alert('翻訳に失敗しました')
+      setProcessStatus({ id, step: 'error', message: '生成に失敗しました' })
+      setTimeout(() => setProcessStatus(null), 5000)
     }
     router.refresh()
     setLoading(null)
-    setAction(null)
-  }
-
-  const generatePost = async (id: string) => {
-    setLoading(id)
-    setAction('generating')
-    try {
-      const res = await fetch(`/api/articles/${id}/generate`, { method: 'POST' })
-      const data = await res.json()
-      if (data.error) {
-        alert(`Error: ${data.error}`)
-      }
-    } catch {
-      alert('投稿文の生成に失敗しました')
-    }
-    router.refresh()
-    setLoading(null)
-    setAction(null)
   }
 
   const publishArticle = async (id: string) => {
@@ -307,13 +301,13 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
       {filteredArticles.map((article) => {
         const xPost = getXPost(article)
-        const canTranslate = article.status === 'pending'
-        const canGenerate = ['translated', 'published'].includes(article.status) && !xPost
+        const canProcess = ['pending', 'translated', 'published'].includes(article.status) && !xPost
         const canPublish = ['translated', 'ready'].includes(article.status) && article.status !== 'published' && article.status !== 'posted'
         const canUnpublish = ['published', 'posted'].includes(article.status)
         const canPostToX = xPost && xPost.status !== 'posted'
         const canSkip = ['pending', 'translated', 'ready'].includes(article.status)
         const isPosted = article.status === 'posted' || xPost?.status === 'posted'
+        const isProcessing = processStatus?.id === article.id && !['done', 'error'].includes(processStatus.step)
 
         return (
           <div
@@ -377,25 +371,34 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                   </div>
                 )}
 
+                {/* 進捗表示 */}
+                {processStatus?.id === article.id && (
+                  <div className={`mt-3 p-2 rounded-lg flex items-center gap-2 text-sm ${
+                    processStatus.step === 'error' ? 'bg-red-900/50 text-red-300' :
+                    processStatus.step === 'done' ? 'bg-green-900/50 text-green-300' :
+                    'bg-blue-900/50 text-blue-300'
+                  }`}>
+                    {isProcessing && (
+                      <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    )}
+                    {processStatus.step === 'done' && <span>✓</span>}
+                    {processStatus.step === 'error' && <span>✗</span>}
+                    <span>{processStatus.message}</span>
+                  </div>
+                )}
+
                 {/* アクションボタン */}
                 <div className="flex flex-wrap items-center gap-2 mt-4">
-                  {canTranslate && (
+                  {canProcess && (
                     <button
-                      onClick={() => translateArticle(article.id)}
+                      onClick={() => processArticle(article.id)}
                       disabled={loading === article.id}
-                      className="px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors"
+                      className="px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
                     >
-                      {loading === article.id && action === 'translating' ? '翻訳中...' : '翻訳する'}
-                    </button>
-                  )}
-
-                  {canGenerate && (
-                    <button
-                      onClick={() => generatePost(article.id)}
-                      disabled={loading === article.id}
-                      className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 text-white rounded transition-colors"
-                    >
-                      {loading === article.id && action === 'generating' ? '生成中...' : '投稿文を生成'}
+                      {isProcessing && (
+                        <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      )}
+                      {isProcessing ? processStatus?.message : '生成'}
                     </button>
                   )}
 
