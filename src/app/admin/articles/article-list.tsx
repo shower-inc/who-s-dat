@@ -66,6 +66,9 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   const [editingPost, setEditingPost] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)
   const [postContent, setPostContent] = useState('')
 
+  // インラインコメント入力
+  const [inlineNotes, setInlineNotes] = useState<Record<string, string>>({})
+
   // タグ関連
   const [allTags, setAllTags] = useState<Tag[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
@@ -221,10 +224,19 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setAction(null)
   }
 
-  const processArticle = async (id: string) => {
+  const processArticle = async (id: string, editorNote?: string) => {
     setLoading(id)
-    setProcessStatus({ id, step: 'translating', message: '翻訳中...' })
+    setProcessStatus({ id, step: 'translating', message: '生成中...' })
     try {
+      // コメントがあれば先に保存
+      if (editorNote) {
+        await fetch(`/api/articles/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ editor_note: editorNote }),
+        })
+      }
+
       const res = await fetch(`/api/articles/${id}/process`, { method: 'POST' })
       const data = await res.json()
       if (data.error) {
@@ -233,6 +245,12 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       } else {
         setProcessStatus({ id, step: 'done', message: '生成完了' })
         setTimeout(() => setProcessStatus(null), 3000)
+        // 生成後はインラインコメントをクリア
+        setInlineNotes(prev => {
+          const next = { ...prev }
+          delete next[id]
+          return next
+        })
       }
     } catch {
       setProcessStatus({ id, step: 'error', message: '生成に失敗しました' })
@@ -491,6 +509,34 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                   </span>
                 </div>
 
+                {/* インラインコメント入力（翻訳済みでまだ生成していない場合） */}
+                {article.status === 'translated' && !xPost && (
+                  <div className="mt-4 p-3 bg-purple-900/20 border border-purple-800/50 rounded-lg">
+                    <label className="block text-xs text-purple-300 mb-2">
+                      編集者コメント（記事・X投稿に反映）
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={inlineNotes[article.id] || (article as ArticleWithSourceAndPosts & { editor_note?: string }).editor_note || ''}
+                        onChange={(e) => setInlineNotes(prev => ({ ...prev, [article.id]: e.target.value }))}
+                        placeholder="例: 前回紹介したアーティスト / MVが良い"
+                        className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-600"
+                      />
+                      <button
+                        onClick={() => processArticle(article.id, inlineNotes[article.id])}
+                        disabled={loading === article.id}
+                        className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2 whitespace-nowrap"
+                      >
+                        {isProcessing && (
+                          <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        )}
+                        {isProcessing ? '生成中...' : '生成'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* X投稿文表示 */}
                 {xPost && (
                   <div className={`mt-4 p-3 rounded-lg ${xPost.status === 'posted' ? 'bg-green-900/30 border border-green-800' : 'bg-gray-800'}`}>
@@ -525,7 +571,8 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
                 {/* アクションボタン */}
                 <div className="flex flex-wrap items-center gap-2 mt-4">
-                  {canProcess && !xPost && (
+                  {/* pending状態の記事には生成ボタンを表示（コメント入力なし） */}
+                  {article.status === 'pending' && (
                     <button
                       onClick={() => processArticle(article.id)}
                       disabled={loading === article.id}

@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { generatePost } from '@/lib/llm/client'
+import { generatePost, detectContentType } from '@/lib/llm/client'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -32,10 +32,27 @@ export async function POST(request: Request) {
         .eq('id', article.id)
 
       const source = article.sources as { name: string; category: string } | null
+
+      // content_type自動判定（未設定またはnewsの場合）
+      let contentType = article.content_type
+      if (!contentType || contentType === 'news') {
+        contentType = await detectContentType({
+          title: article.title_original,
+          description: article.summary_original || '',
+          source: source?.name || 'Unknown',
+        })
+
+        // DBに保存
+        await supabase
+          .from('articles')
+          .update({ content_type: contentType })
+          .eq('id', article.id)
+      }
+
       const postContent = await generatePost({
         title: article.title_ja || article.title_original,
         summary: article.summary_ja || article.summary_original || '',
-        category: source?.category || 'music',
+        category: contentType,
         editorNote: article.editor_note || undefined,
       })
 

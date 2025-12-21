@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { generateArticle, generatePost } from '@/lib/llm/client'
+import { generateArticle, generatePost, detectContentType } from '@/lib/llm/client'
 import { createArtistService } from '@/lib/artists/service'
 import { NextResponse } from 'next/server'
 
@@ -35,11 +35,28 @@ export async function POST(
     const artist = await artistService.getOrFetchArtist(article.title_original)
     const artistInfo = artistService.formatArtistInfo(artist)
 
-    // 記事にアーティストIDを紐付け
+    // Step 1.5: content_type自動判定（未設定の場合）
+    let contentType = article.content_type
+    if (!contentType || contentType === 'news') {
+      contentType = await detectContentType({
+        title: article.title_original,
+        description: article.summary_original || '',
+        source: source?.name || 'Unknown',
+      })
+    }
+
+    // 記事にアーティストIDとcontent_typeを紐付け
+    const updateData: { artist_id?: string; content_type?: string } = {}
     if (artist) {
+      updateData.artist_id = artist.id
+    }
+    if (contentType !== article.content_type) {
+      updateData.content_type = contentType
+    }
+    if (Object.keys(updateData).length > 0) {
       await supabase
         .from('articles')
-        .update({ artist_id: artist.id })
+        .update(updateData)
         .eq('id', id)
     }
 
