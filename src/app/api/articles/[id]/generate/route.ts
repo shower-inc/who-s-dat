@@ -25,12 +25,18 @@ export async function POST(
     return NextResponse.json({ error: 'Article not translated yet' }, { status: 400 })
   }
 
+  // 公開済みの場合はステータスを維持
+  const isPublished = ['published', 'posted'].includes(article.status)
+  const originalStatus = article.status
+
   try {
-    // ステータスを更新
-    await supabase
-      .from('articles')
-      .update({ status: 'generating' })
-      .eq('id', id)
+    // ステータスを更新（公開済みでなければ）
+    if (!isPublished) {
+      await supabase
+        .from('articles')
+        .update({ status: 'generating' })
+        .eq('id', id)
+    }
 
     // 投稿文を生成
     const postContent = await generatePost({
@@ -58,10 +64,10 @@ export async function POST(
       throw postError
     }
 
-    // 記事ステータスを更新
+    // 記事ステータスを更新（公開済みの場合は元のステータスを維持）
     await supabase
       .from('articles')
-      .update({ status: 'ready' })
+      .update({ status: isPublished ? originalStatus : 'ready' })
       .eq('id', id)
 
     return NextResponse.json({
