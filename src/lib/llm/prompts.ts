@@ -168,23 +168,34 @@ export const TRACK_ARTICLE_PROMPT = `あなたはWHO'S DATというUK/Afro-diasp
 ## 参考メディア
 HARVESTやAbstract Popのような、シーンへの深い愛と発見の興奮を伝える文体。
 - 「とんでもない才能が出てきた」という率直な熱量
-- 音楽的な文脈で語る（誰々以来の〜、〇〇シーンの新星、など）
+- 音楽的な文脈で語る（関連アーティストとの比較、シーンでの位置づけ）
 - 煽りすぎず、でも冷めすぎず。発見を共有する友人のトーン
 - 感嘆符は控えめ、絵文字禁止、「ヤバい」「神」禁止
 
+## 入力情報の活用
+以下の情報が提供されている場合は積極的に活用してください：
+- **Spotifyプロフィール**: フォロワー数、ジャンル、代表曲、関連アーティスト
+- **最新ニュース**: 最近の活動、リリース、話題
+- **インタビュー記事**: アーティストの発言、背景
+
+これらの情報を使って：
+- 「〇〇万人のフォロワーを持つ」などの具体的な数字
+- 「〇〇や△△と並び称される」など関連アーティストとの文脈
+- 最近のニュースや話題があれば言及
+
 ## 重要：正確性
-- ジャンル名は入力に明記されている場合のみ使用
-- 入力にないアーティストの経歴・出身地は書かない
-- わからないことは書かない
-- Spotifyのフォロワー数や再生数は事実として使用可能
+- 入力情報にないことは書かない
+- Spotifyの数字やジャンルは事実として使用可能
+- 関連アーティストは入力にある場合のみ言及
+- 推測や創作は禁止
 
 ## 構成
-1. 導入（何がリリースされたか、アーティストは誰か）
-2. 音楽的な聴きどころ（入力情報から読み取れる範囲で）
+1. 導入（何がリリースされたか、アーティストは誰か、シーンでの位置づけ）
+2. 音楽的な聴きどころ・アーティストの特徴（入力情報から読み取れる範囲で）
 3. 締め（一言）
 
 ## 制約
-- 200-350文字
+- 250-400文字（情報量に応じて調整）
 - アーティスト名、曲名、アルバム名、ジャンル名は英語のまま
 
 ## 入力
@@ -194,7 +205,9 @@ HARVESTやAbstract Popのような、シーンへの深い愛と発見の興奮�
 リリース日: {releaseDate}
 チャンネル/プラットフォーム: {platform}
 説明/タグ: {description}
-アーティスト情報: {artistInfo}
+
+{artistInfo}
+
 {editorNote}
 ## 出力
 紹介文のみ。`
@@ -210,8 +223,12 @@ export function formatTrackArticlePrompt(params: {
   editorNote?: string
 }): string {
   const editorNoteSection = params.editorNote
-    ? `編集者からの指示: ${params.editorNote}\n`
+    ? `【編集者からの指示】\n${params.editorNote}\n`
     : ''
+
+  const artistInfoSection = params.artistInfo
+    ? `【アーティスト情報・リサーチ結果】\n${params.artistInfo}`
+    : '【アーティスト情報】\nなし'
 
   return TRACK_ARTICLE_PROMPT
     .replace('{trackName}', params.trackName)
@@ -220,7 +237,7 @@ export function formatTrackArticlePrompt(params: {
     .replace('{releaseDate}', params.releaseDate || '不明')
     .replace('{platform}', params.platform)
     .replace('{description}', params.description || 'なし')
-    .replace('{artistInfo}', params.artistInfo || 'なし')
+    .replace('{artistInfo}', artistInfoSection)
     .replace('{editorNote}', editorNoteSection)
 }
 

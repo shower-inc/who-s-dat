@@ -1,8 +1,9 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { extractVideoId, getVideoDetails } from '@/lib/youtube/client'
-import { extractSpotifyTrackId, getTrackDetails, getArtistDetails } from '@/lib/spotify/client'
+import { extractSpotifyTrackId, getTrackDetails, getArtistFullProfile } from '@/lib/spotify/client'
 import { translateText, generateTrackArticle, generatePost } from '@/lib/llm/client'
+import { researchArtist, formatResearchForPrompt } from '@/lib/research/artist-research'
 
 interface TrackMetadata {
   platform: 'youtube' | 'spotify'
@@ -15,6 +16,7 @@ interface TrackMetadata {
   thumbnailUrl?: string
   externalUrl: string
   videoId?: string // YouTube only
+  spotifyArtistId?: string // Spotifyアーティストのリサーチ用
 }
 
 // URLからメタデータを取得
@@ -69,7 +71,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 記事生成
+    // アーティストリサーチを実行
+    console.log(`[track] Researching artist: ${metadata.artistNames}`)
+    const research = await researchArtist(metadata.artistNames, {
+      spotifyArtistId: metadata.spotifyArtistId,
+    })
+    const researchText = formatResearchForPrompt(research)
+    console.log(`[track] Research complete. Spotify profile: ${research.spotifyProfile ? 'found' : 'not found'}, News: ${research.recentNews.length}, Interviews: ${research.interviews.length}`)
+
+    // 記事生成（リサーチ情報を含める）
     const articleContent = await generateTrackArticle({
       trackName: metadata.trackName,
       artistNames: metadata.artistNames,
@@ -77,7 +87,7 @@ export async function POST(request: NextRequest) {
       releaseDate: metadata.releaseDate,
       platform: metadata.platform === 'youtube' ? 'YouTube' : 'Spotify',
       description: metadata.description,
-      artistInfo: metadata.artistInfo,
+      artistInfo: researchText || metadata.artistInfo, // リサーチ結果を優先
       editorNote,
     })
 
@@ -180,17 +190,26 @@ async function fetchTrackMetadata(url: string): Promise<TrackMetadata | null> {
     const trackDetails = await getTrackDetails(spotifyTrackId)
     if (!trackDetails) return null
 
-    // メインアーティストの詳細を取得
+    // メインアーティストのIDを保存（リサーチ用）
+    const mainArtistId = trackDetails.artists[0]?.id
+
+    // メインアーティストの詳細を取得（プレビュー用の簡易情報）
     let artistInfo: string | undefined
-    if (trackDetails.artists.length > 0) {
-      const mainArtist = await getArtistDetails(trackDetails.artists[0].id)
-      if (mainArtist) {
+    if (mainArtistId) {
+      const profile = await getArtistFullProfile(mainArtistId)
+      if (profile) {
         const parts: string[] = []
-        if (mainArtist.genres.length > 0) {
-          parts.push(`ジャンル: ${mainArtist.genres.slice(0, 3).join(', ')}`)
+        if (profile.artist.genres.length > 0) {
+          parts.push(`ジャンル: ${profile.artist.genres.slice(0, 3).join(', ')}`)
         }
-        if (mainArtist.followers > 0) {
-          parts.push(`フォロワー: ${mainArtist.followers.toLocaleString()}人`)
+        if (profile.artist.followers > 0) {
+          parts.push(`フォロワー: ${profile.artist.followers.toLocaleString()}人`)
+        }
+        if (profile.topTracks.length > 0) {
+          parts.push(`代表曲: ${profile.topTracks.slice(0, 3).map(t => t.name).join(', ')}`)
+        }
+        if (profile.relatedArtists.length > 0) {
+          parts.push(`関連: ${profile.relatedArtists.slice(0, 3).map(a => a.name).join(', ')}`)
         }
         if (parts.length > 0) {
           artistInfo = parts.join(' / ')
@@ -207,6 +226,7 @@ async function fetchTrackMetadata(url: string): Promise<TrackMetadata | null> {
       releaseDate: trackDetails.album.releaseDate || undefined,
       thumbnailUrl: trackDetails.album.images[0]?.url,
       externalUrl: trackDetails.externalUrl,
+      spotifyArtistId: mainArtistId, // リサーチで使用
     }
   }
 

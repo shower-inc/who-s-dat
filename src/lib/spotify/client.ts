@@ -145,3 +145,171 @@ export async function getArtistDetails(artistId: string): Promise<SpotifyArtist 
     return null
   }
 }
+
+// アーティストのトップトラックを取得
+export interface SpotifyTopTrack {
+  id: string
+  name: string
+  popularity: number
+  albumName: string
+}
+
+export async function getArtistTopTracks(artistId: string): Promise<SpotifyTopTrack[]> {
+  try {
+    const token = await getAccessToken()
+
+    const response = await fetch(
+      `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=JP`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      console.error(`Spotify API error: ${response.status}`)
+      return []
+    }
+
+    const data = await response.json()
+
+    return (data.tracks || []).slice(0, 5).map((track: {
+      id: string
+      name: string
+      popularity: number
+      album: { name: string }
+    }) => ({
+      id: track.id,
+      name: track.name,
+      popularity: track.popularity,
+      albumName: track.album.name,
+    }))
+  } catch (error) {
+    console.error('Spotify API error:', error)
+    return []
+  }
+}
+
+// 関連アーティストを取得
+export interface SpotifyRelatedArtist {
+  id: string
+  name: string
+  genres: string[]
+  followers: number
+}
+
+export async function getRelatedArtists(artistId: string): Promise<SpotifyRelatedArtist[]> {
+  try {
+    const token = await getAccessToken()
+
+    const response = await fetch(
+      `https://api.spotify.com/v1/artists/${artistId}/related-artists`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      console.error(`Spotify API error: ${response.status}`)
+      return []
+    }
+
+    const data = await response.json()
+
+    return (data.artists || []).slice(0, 5).map((artist: {
+      id: string
+      name: string
+      genres: string[]
+      followers: { total: number }
+    }) => ({
+      id: artist.id,
+      name: artist.name,
+      genres: artist.genres || [],
+      followers: artist.followers?.total || 0,
+    }))
+  } catch (error) {
+    console.error('Spotify API error:', error)
+    return []
+  }
+}
+
+// アーティスト名で検索（YouTube動画からアーティスト情報を取得する用）
+export async function searchArtist(artistName: string): Promise<SpotifyArtist | null> {
+  try {
+    const token = await getAccessToken()
+
+    const response = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      console.error(`Spotify API error: ${response.status}`)
+      return null
+    }
+
+    const data = await response.json()
+    const artist = data.artists?.items?.[0]
+
+    if (!artist) return null
+
+    return {
+      id: artist.id,
+      name: artist.name,
+      genres: artist.genres || [],
+      followers: artist.followers?.total || 0,
+      images: artist.images || [],
+      externalUrl: artist.external_urls?.spotify || `https://open.spotify.com/artist/${artist.id}`,
+    }
+  } catch (error) {
+    console.error('Spotify API error:', error)
+    return null
+  }
+}
+
+// アーティストの完全な情報を取得（詳細 + トップトラック + 関連アーティスト）
+export interface ArtistFullProfile {
+  artist: SpotifyArtist
+  topTracks: SpotifyTopTrack[]
+  relatedArtists: SpotifyRelatedArtist[]
+}
+
+export async function getArtistFullProfile(artistId: string): Promise<ArtistFullProfile | null> {
+  const artist = await getArtistDetails(artistId)
+  if (!artist) return null
+
+  const [topTracks, relatedArtists] = await Promise.all([
+    getArtistTopTracks(artistId),
+    getRelatedArtists(artistId),
+  ])
+
+  return {
+    artist,
+    topTracks,
+    relatedArtists,
+  }
+}
+
+// アーティスト名からプロフィールを検索・取得
+export async function searchArtistFullProfile(artistName: string): Promise<ArtistFullProfile | null> {
+  const artist = await searchArtist(artistName)
+  if (!artist) return null
+
+  const [topTracks, relatedArtists] = await Promise.all([
+    getArtistTopTracks(artist.id),
+    getRelatedArtists(artist.id),
+  ])
+
+  return {
+    artist,
+    topTracks,
+    relatedArtists,
+  }
+}
