@@ -24,23 +24,38 @@ export async function POST(
     // RSSフィードを取得
     const articles = await fetchRssFeed(source.url)
 
-    // 記事をDBに保存（重複はスキップ）
+    // 記事をDBに保存（新規は追加、既存はview_count/like_countを更新）
     let insertedCount = 0
     for (const article of articles) {
-      const { error } = await supabase.from('articles').upsert(
-        {
+      // まず既存の記事を確認
+      const { data: existing } = await supabase
+        .from('articles')
+        .select('id')
+        .eq('source_id', source.id)
+        .eq('external_id', article.external_id)
+        .single()
+
+      if (existing) {
+        // 既存の記事はview_count, like_count, summary_originalのみ更新
+        await supabase
+          .from('articles')
+          .update({
+            view_count: article.view_count,
+            like_count: article.like_count,
+            summary_original: article.summary_original,
+          })
+          .eq('id', existing.id)
+      } else {
+        // 新規記事は挿入
+        const { error } = await supabase.from('articles').insert({
           source_id: source.id,
           ...article,
           status: 'pending',
-        },
-        {
-          onConflict: 'source_id,external_id',
-          ignoreDuplicates: true,
-        }
-      )
+        })
 
-      if (!error) {
-        insertedCount++
+        if (!error) {
+          insertedCount++
+        }
       }
     }
 

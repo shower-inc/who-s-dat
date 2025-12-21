@@ -32,6 +32,13 @@ const statusLabels: Record<string, string> = {
   error: 'エラー',
 }
 
+function formatCount(count: number | null): string {
+  if (count === null) return '-'
+  if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`
+  return count.toString()
+}
+
 export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
@@ -102,9 +109,19 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
                       {article.title_original}
                     </p>
                   )}
-                  <p className="text-sm text-gray-400 mt-2">
-                    {article.sources?.name} • {article.sources?.category}
-                  </p>
+                  <div className="flex items-center gap-3 text-sm text-gray-400 mt-2">
+                    <span>{article.sources?.name} • {article.sources?.category}</span>
+                    {(article.view_count !== null || article.like_count !== null) && (
+                      <span className="flex items-center gap-2 text-gray-500">
+                        {article.view_count !== null && (
+                          <span title="再生数">▶ {formatCount(article.view_count)}</span>
+                        )}
+                        {article.like_count !== null && (
+                          <span title="いいね">♡ {formatCount(article.like_count)}</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <span className={`px-2 py-1 text-xs rounded whitespace-nowrap ${statusColors[article.status] || 'bg-gray-700 text-gray-300'}`}>
                   {statusLabels[article.status] || article.status}
