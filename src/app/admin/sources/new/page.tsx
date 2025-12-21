@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -35,7 +34,6 @@ const recommendedChannels = [
 ]
 
 export default function NewSourcePage() {
-  const supabase = createClient()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [resolving, setResolving] = useState(false)
@@ -56,15 +54,25 @@ export default function NewSourcePage() {
     e.preventDefault()
     setLoading(true)
 
-    const { error } = await supabase.from('sources').insert([form])
+    try {
+      const res = await fetch('/api/admin/sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
 
-    if (error) {
-      alert(`Error: ${error.message}`)
+      if (!res.ok) {
+        const data = await res.json()
+        alert(`Error: ${data.error}`)
+        setLoading(false)
+        return
+      }
+
+      router.push('/admin/sources')
+    } catch (error) {
+      alert(`Error: ${error}`)
       setLoading(false)
-      return
     }
-
-    router.push('/admin/sources')
   }
 
   // Resolve YouTube handle to channel info
