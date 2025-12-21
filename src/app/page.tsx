@@ -7,12 +7,16 @@ export const revalidate = 60 // 1分ごとに再検証
 export default async function Home() {
   const supabase = await createClient()
 
-  const { data: articles } = await supabase
+  const { data: articles, error } = await supabase
     .from('articles')
     .select('*, sources(name)')
     .in('status', ['published', 'posted'])
     .order('published_at', { ascending: false })
     .limit(20)
+
+  if (error) {
+    console.error('Failed to fetch articles:', error)
+  }
 
   return (
     <div className="min-h-screen bg-black">
