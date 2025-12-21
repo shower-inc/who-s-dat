@@ -39,6 +39,14 @@ export const CONTENT_TYPES: ContentType[] = [
   'tune',
 ]
 
+// Content block types for rich content (外部記事用)
+export type ContentBlock =
+  | { type: 'text'; content: string }
+  | { type: 'image'; src: string; alt?: string }
+  | { type: 'embed'; platform: 'youtube' | 'spotify' | 'soundcloud' | 'twitter'; embedId: string; embedUrl?: string }
+  | { type: 'quote'; content: string; author?: string }
+  | { type: 'cta'; text: string; url: string }
+
 export interface Database {
   public: {
     Tables: {
@@ -46,7 +54,7 @@ export interface Database {
         Row: {
           id: string
           name: string
-          type: 'rss' | 'youtube'
+          type: 'rss' | 'youtube' | 'rss_article'
           url: string
           category: string
           enabled: boolean
@@ -59,7 +67,7 @@ export interface Database {
         Insert: {
           id?: string
           name: string
-          type: 'rss' | 'youtube'
+          type: 'rss' | 'youtube' | 'rss_article'
           url: string
           category: string
           enabled?: boolean
@@ -72,7 +80,7 @@ export interface Database {
         Update: {
           id?: string
           name?: string
-          type?: 'rss' | 'youtube'
+          type?: 'rss' | 'youtube' | 'rss_article'
           url?: string
           category?: string
           enabled?: boolean
@@ -103,6 +111,12 @@ export interface Database {
           like_count: number | null
           artist_id: string | null
           editor_note: string | null
+          // 外部記事用フィールド
+          source_url: string | null
+          source_site_name: string | null
+          excerpt_original: string | null
+          excerpt_ja: string | null
+          content_blocks: ContentBlock[] | null
           created_at: string
           updated_at: string
         }
@@ -125,6 +139,12 @@ export interface Database {
           like_count?: number | null
           artist_id?: string | null
           editor_note?: string | null
+          // 外部記事用フィールド
+          source_url?: string | null
+          source_site_name?: string | null
+          excerpt_original?: string | null
+          excerpt_ja?: string | null
+          content_blocks?: ContentBlock[] | null
           created_at?: string
           updated_at?: string
         }
@@ -147,6 +167,12 @@ export interface Database {
           like_count?: number | null
           artist_id?: string | null
           editor_note?: string | null
+          // 外部記事用フィールド
+          source_url?: string | null
+          source_site_name?: string | null
+          excerpt_original?: string | null
+          excerpt_ja?: string | null
+          content_blocks?: ContentBlock[] | null
           created_at?: string
           updated_at?: string
         }

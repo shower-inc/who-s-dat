@@ -3,7 +3,6 @@
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { CONTENT_TYPE_LABELS, CONTENT_TYPE_ICONS, ContentType } from '@/types/database'
 
 type Category = {
   id: string
@@ -32,11 +31,11 @@ type TrackMetadata = {
   externalUrl: string
 }
 
-type TabType = 'article' | 'track'
+type TabType = 'track' | 'article'
 
-export default function NewArticlePage() {
+export default function AddPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<TabType>('article')
+  const [activeTab, setActiveTab] = useState<TabType>('track')
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
@@ -176,7 +175,6 @@ export default function NewArticlePage() {
 
       if (!res.ok) {
         if (res.status === 409) {
-          // 重複の場合
           alert('この記事は既に登録されています')
           router.push('/admin/articles')
         } else {
@@ -195,21 +193,10 @@ export default function NewArticlePage() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-3xl font-bold text-white mb-4">記事を追加</h1>
+      <h1 className="text-3xl font-bold text-white mb-4">記事追加</h1>
 
       {/* タブ切り替え */}
       <div className="flex gap-2 mb-6">
-        <button
-          type="button"
-          onClick={() => handleTabChange('article')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'article'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-          }`}
-        >
-          外部記事
-        </button>
         <button
           type="button"
           onClick={() => handleTabChange('track')}
@@ -221,137 +208,18 @@ export default function NewArticlePage() {
         >
           曲・MV
         </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('article')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === 'article'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+          }`}
+        >
+          外部記事
+        </button>
       </div>
-
-      {/* 外部記事タブ */}
-      {activeTab === 'article' && (
-        <>
-          <p className="text-gray-400 mb-8">
-            外部メディアの記事URLを入力すると、自動で内容を取得・翻訳して紹介記事を作成します。
-            <br />
-            <span className="text-sm text-gray-500">※ 引用の範囲で冒頭を抜粋し、元記事へのリンクを掲載します</span>
-          </p>
-
-          <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
-            {/* URL入力 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                記事URL
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  required
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="https://vipermag.com/2025/10/20/gwamz-interview/"
-                />
-                <button
-                  type="button"
-                  onClick={fetchPreview}
-                  disabled={fetching || !url}
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white rounded-lg transition-colors whitespace-nowrap"
-                >
-                  {fetching ? '取得中...' : '記事を取得'}
-                </button>
-              </div>
-            </div>
-
-        {/* エラー表示 */}
-        {error && (
-          <div className="p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
-            {error}
-          </div>
-        )}
-
-        {/* プレビュー表示 */}
-        {scraped && (
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 space-y-4">
-            <h2 className="text-lg font-medium text-white">プレビュー</h2>
-
-            {/* サムネイル */}
-            {scraped.thumbnailUrl && (
-              <img
-                src={scraped.thumbnailUrl}
-                alt=""
-                className="w-full max-w-md rounded-lg"
-              />
-            )}
-
-            {/* メタ情報 */}
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">{scraped.title}</h3>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 rounded">
-                  {scraped.siteName}
-                </span>
-                {scraped.author && <span>• {scraped.author}</span>}
-                {scraped.publishedAt && (
-                  <span>• {new Date(scraped.publishedAt).toLocaleDateString('ja-JP')}</span>
-                )}
-              </div>
-            </div>
-
-            {/* 抜粋 */}
-            <div className="p-4 bg-gray-900 rounded-lg border-l-4 border-gray-600">
-              <p className="text-sm text-gray-400 mb-2">引用範囲（この部分が翻訳されます）</p>
-              <p className="text-gray-300 whitespace-pre-wrap">{scraped.excerpt}</p>
-            </div>
-
-            {/* カテゴリ選択 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                カテゴリ
-              </label>
-              <select
-                value={selectedCategoryId}
-                onChange={(e) => setSelectedCategoryId(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">カテゴリなし</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 処理内容説明 */}
-            <div className="p-4 bg-gray-900/50 rounded-lg">
-              <p className="text-sm text-gray-400">「記事を保存」を押すと以下の処理を行います:</p>
-              <ul className="text-sm text-gray-500 mt-2 space-y-1">
-                <li>• タイトルを日本語に翻訳</li>
-                <li>• 抜粋部分を日本語に翻訳</li>
-                <li>• 紹介文を生成（WHO'S DATスタイル）</li>
-                <li>• X投稿文を生成</li>
-                <li>• コンテンツ種別を自動判定</li>
-              </ul>
-            </div>
-          </div>
-        )}
-
-            {/* ボタン */}
-            <div className="flex gap-4">
-              <button
-                type="submit"
-                disabled={loading || !scraped}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white font-medium rounded-lg transition-colors"
-              >
-                {loading ? '処理中...' : '記事を保存（翻訳処理込み）'}
-              </button>
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
-              >
-                キャンセル
-              </button>
-            </div>
-          </form>
-        </>
-      )}
 
       {/* 曲・MVタブ */}
       {activeTab === 'track' && (
@@ -466,7 +334,7 @@ export default function NewArticlePage() {
                   <p className="text-sm text-gray-400">「記事を保存」を押すと以下の処理を行います:</p>
                   <ul className="text-sm text-gray-500 mt-2 space-y-1">
                     <li>• タイトルを日本語に翻訳</li>
-                    <li>• 紹介記事を生成（WHO'S DATスタイル）</li>
+                    <li>• 紹介記事を生成（WHO&apos;S DATスタイル）</li>
                     <li>• X投稿文を生成</li>
                   </ul>
                 </div>
@@ -482,12 +350,128 @@ export default function NewArticlePage() {
               >
                 {loading ? '処理中...' : '記事を保存'}
               </button>
+            </div>
+          </form>
+        </>
+      )}
+
+      {/* 外部記事タブ */}
+      {activeTab === 'article' && (
+        <>
+          <p className="text-gray-400 mb-8">
+            外部メディアの記事URLを入力すると、自動で内容を取得・翻訳して紹介記事を作成します。
+            <br />
+            <span className="text-sm text-gray-500">※ 引用の範囲で冒頭を抜粋し、元記事へのリンクを掲載します</span>
+          </p>
+
+          <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
+            {/* URL入力 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                記事URL
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  required
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://vipermag.com/2025/10/20/gwamz-interview/"
+                />
+                <button
+                  type="button"
+                  onClick={fetchPreview}
+                  disabled={fetching || !url}
+                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white rounded-lg transition-colors whitespace-nowrap"
+                >
+                  {fetching ? '取得中...' : '記事を取得'}
+                </button>
+              </div>
+            </div>
+
+            {/* エラー表示 */}
+            {error && (
+              <div className="p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
+                {error}
+              </div>
+            )}
+
+            {/* プレビュー表示 */}
+            {scraped && (
+              <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 space-y-4">
+                <h2 className="text-lg font-medium text-white">プレビュー</h2>
+
+                {/* サムネイル */}
+                {scraped.thumbnailUrl && (
+                  <img
+                    src={scraped.thumbnailUrl}
+                    alt=""
+                    className="w-full max-w-md rounded-lg"
+                  />
+                )}
+
+                {/* メタ情報 */}
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-white">{scraped.title}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 rounded">
+                      {scraped.siteName}
+                    </span>
+                    {scraped.author && <span>• {scraped.author}</span>}
+                    {scraped.publishedAt && (
+                      <span>• {new Date(scraped.publishedAt).toLocaleDateString('ja-JP')}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 抜粋 */}
+                <div className="p-4 bg-gray-900 rounded-lg border-l-4 border-gray-600">
+                  <p className="text-sm text-gray-400 mb-2">引用範囲（この部分が翻訳されます）</p>
+                  <p className="text-gray-300 whitespace-pre-wrap">{scraped.excerpt}</p>
+                </div>
+
+                {/* カテゴリ選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    カテゴリ
+                  </label>
+                  <select
+                    value={selectedCategoryId}
+                    onChange={(e) => setSelectedCategoryId(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">カテゴリなし</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 処理内容説明 */}
+                <div className="p-4 bg-gray-900/50 rounded-lg">
+                  <p className="text-sm text-gray-400">「記事を保存」を押すと以下の処理を行います:</p>
+                  <ul className="text-sm text-gray-500 mt-2 space-y-1">
+                    <li>• タイトルを日本語に翻訳</li>
+                    <li>• 抜粋部分を日本語に翻訳</li>
+                    <li>• 紹介文を生成（WHO&apos;S DATスタイル）</li>
+                    <li>• X投稿文を生成</li>
+                    <li>• コンテンツ種別を自動判定</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* ボタン */}
+            <div className="flex gap-4">
               <button
-                type="button"
-                onClick={() => router.back()}
-                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                type="submit"
+                disabled={loading || !scraped}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white font-medium rounded-lg transition-colors"
               >
-                キャンセル
+                {loading ? '処理中...' : '記事を保存（翻訳処理込み）'}
               </button>
             </div>
           </form>

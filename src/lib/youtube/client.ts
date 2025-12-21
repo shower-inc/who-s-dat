@@ -2,7 +2,12 @@ const YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3'
 
 export interface VideoDetails {
   videoId: string
+  title: string
+  channelTitle: string
+  channelId: string
   description: string | null
+  publishedAt: string | null
+  thumbnailUrl: string | null
   viewCount: number | null
   likeCount: number | null
   tags: string[]
@@ -57,13 +62,20 @@ export async function getVideoDetails(videoId: string): Promise<VideoDetails | n
   }
 
   const item = data.items[0]
+  const snippet = item.snippet || {}
+  const thumbnails = snippet.thumbnails || {}
 
   return {
     videoId,
-    description: item.snippet?.description || null,
+    title: snippet.title || '',
+    channelTitle: snippet.channelTitle || '',
+    channelId: snippet.channelId || '',
+    description: snippet.description || null,
+    publishedAt: snippet.publishedAt || null,
+    thumbnailUrl: thumbnails.maxres?.url || thumbnails.high?.url || thumbnails.medium?.url || thumbnails.default?.url || null,
     viewCount: item.statistics?.viewCount ? parseInt(item.statistics.viewCount, 10) : null,
     likeCount: item.statistics?.likeCount ? parseInt(item.statistics.likeCount, 10) : null,
-    tags: item.snippet?.tags || [],
+    tags: snippet.tags || [],
   }
 }
 
@@ -177,12 +189,19 @@ export async function getMultipleVideoDetails(videoIds: string[]): Promise<Map<s
     const data = await response.json()
 
     for (const item of data.items || []) {
+      const snippet = item.snippet || {}
+      const thumbnails = snippet.thumbnails || {}
       results.set(item.id, {
         videoId: item.id,
-        description: item.snippet?.description || null,
+        title: snippet.title || '',
+        channelTitle: snippet.channelTitle || '',
+        channelId: snippet.channelId || '',
+        description: snippet.description || null,
+        publishedAt: snippet.publishedAt || null,
+        thumbnailUrl: thumbnails.maxres?.url || thumbnails.high?.url || thumbnails.medium?.url || thumbnails.default?.url || null,
         viewCount: item.statistics?.viewCount ? parseInt(item.statistics.viewCount, 10) : null,
         likeCount: item.statistics?.likeCount ? parseInt(item.statistics.likeCount, 10) : null,
-        tags: item.snippet?.tags || [],
+        tags: snippet.tags || [],
       })
     }
   }

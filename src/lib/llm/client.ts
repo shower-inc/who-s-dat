@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { formatTranslatePrompt, formatPostGenerationPrompt, formatArticleGenerationPrompt, formatContentTypePrompt } from './prompts'
+import { formatTranslatePrompt, formatPostGenerationPrompt, formatArticleGenerationPrompt, formatContentTypePrompt, formatExcerptTranslatePrompt, formatExternalArticleIntroPrompt, formatTrackArticlePrompt } from './prompts'
 import type { ContentType } from '@/types/database'
 
 const MODEL = 'claude-3-haiku-20240307'
@@ -44,6 +44,14 @@ export async function generatePost(params: {
   const client = getClient()
   const { system, user } = formatPostGenerationPrompt(params)
 
+  // デバッグ: 入力内容をログ出力
+  console.log('[generatePost] Input params:', {
+    title: params.title?.substring(0, 50),
+    summaryLength: params.summary?.length,
+    category: params.category,
+    hasEditorNote: !!params.editorNote,
+  })
+
   const message = await client.messages.create({
     model: MODEL,
     max_tokens: 512,
@@ -56,7 +64,12 @@ export async function generatePost(params: {
     throw new Error('Unexpected response type')
   }
 
-  return content.text.trim()
+  const result = content.text.trim()
+
+  // デバッグ: 出力内容をログ
+  console.log('[generatePost] Output:', result.substring(0, 100))
+
+  return result
 }
 
 export async function generateArticle(params: {
@@ -131,4 +144,110 @@ export async function detectContentType(params: {
   }
 
   return 'tune' // デフォルト（楽曲紹介が多いため）
+}
+
+// 外部記事の抜粋翻訳
+export async function translateExcerpt(text: string): Promise<string> {
+  if (!text || text.trim() === '') {
+    return ''
+  }
+
+  const client = getClient()
+  const { system, user } = formatExcerptTranslatePrompt(text)
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 2048,
+    system,
+    messages: [{ role: 'user', content: user }],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') {
+    throw new Error('Unexpected response type')
+  }
+
+  return content.text.trim()
+}
+
+// 外部記事の紹介文生成
+export async function generateExternalArticleIntro(params: {
+  title: string
+  excerpt: string
+  siteName: string
+  contentType: string
+}): Promise<string> {
+  const client = getClient()
+  const prompt = formatExternalArticleIntroPrompt(params)
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 512,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') {
+    throw new Error('Unexpected response type')
+  }
+
+  return content.text.trim()
+}
+
+// 外部記事の処理（抜粋翻訳 + 紹介文生成 + タイトル翻訳）
+export async function processExternalArticle(params: {
+  title: string
+  excerpt: string
+  siteName: string
+  contentType: ContentType
+}): Promise<{
+  titleJa: string
+  excerptJa: string
+  summaryJa: string
+}> {
+  // 並行処理で高速化
+  const [titleJa, excerptJa, summaryJa] = await Promise.all([
+    translateText(params.title),
+    translateExcerpt(params.excerpt),
+    generateExternalArticleIntro({
+      title: params.title,
+      excerpt: params.excerpt,
+      siteName: params.siteName,
+      contentType: params.contentType,
+    }),
+  ])
+
+  return {
+    titleJa,
+    excerptJa,
+    summaryJa,
+  }
+}
+
+// トラック紹介記事生成（YouTube/Spotify）
+export async function generateTrackArticle(params: {
+  trackName: string
+  artistNames: string
+  albumName?: string
+  releaseDate?: string
+  platform: string
+  description?: string
+  artistInfo?: string
+  editorNote?: string
+}): Promise<string> {
+  const client = getClient()
+  const prompt = formatTrackArticlePrompt(params)
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') {
+    throw new Error('Unexpected response type')
+  }
+
+  return content.text.trim()
 }

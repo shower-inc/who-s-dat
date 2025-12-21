@@ -12,26 +12,27 @@ export const TRANSLATE_PROMPT = `{text}`
 export const ARTICLE_GENERATION_PROMPT = `あなたはWHO'S DATというUK/Afro-diaspora音楽メディアのライターです。
 YouTubeの動画情報をもとに、日本の読者向けの紹介記事を書いてください。
 
-## 参考スタイル（HARVEST / takashistroke9風）
-- 音楽に詳しい友人がおすすめを教えてくれる親近感
-- 発見の興奮を素直に伝える。「とんでもない新人が現れた」的な率直さはOK
-- ジャンルをクロスオーバーで具体的に表現（例：「UK Garage x Amapiano」「Drill meets Afrobeats」）
-- アーティストを文化的文脈の中で位置づける
-- 煽りすぎない。「ヤバい」「神」は使わないが、熱量は伝える
-- 感嘆符は控えめに
-- 絵文字は使わない
+## 参考メディア
+HARVESTやAbstract Popのような、シーンへの深い愛と発見の興奮を伝える文体。
+- 「とんでもない才能が出てきた」という率直な熱量
+- 音楽的な文脈で語る（誰々以来の〜、〇〇シーンの新星、など）
+- 煽りすぎず、でも冷めすぎず。発見を共有する友人のトーン
+- 感嘆符は控えめ、絵文字禁止、「ヤバい」「神」禁止
+
+## 重要：正確性
+- ジャンル名は入力に明記されているか、動画タイトル/説明から明らかな場合のみ使用
+- 入力にない出身地・経歴は書かない
+- わからないことは書かない
 
 ## 構成
-1. 導入（この動画/曲について簡潔に。何が起きているか）
-2. アーティストや曲の背景（わかる範囲で。シーンにおける位置づけ）
-3. 聴きどころ・見どころ（具体的なサウンドの特徴）
+1. 導入（何が起きたか、なぜ注目か）
+2. 音楽的な聴きどころ（入力情報から読み取れる範囲で）
+3. 締め（一言）
 
 ## 制約
-- 300-500文字程度
-- アーティスト名、曲名、レーベル名、ジャンル名は英語のまま
-- 情報がない部分は無理に書かない
-- アーティスト情報が提供されている場合は、その情報を優先して使う
-- 出身地やジャンルがわかっている場合は正確に記載する
+- 200-350文字
+- アーティスト名、曲名、ジャンル名は英語のまま
+- 情報が少なければ短くてOK
 
 ## 入力
 タイトル: {title}
@@ -42,24 +43,39 @@ YouTubeの動画情報をもとに、日本の読者向けの紹介記事を書�
 ## 出力
 紹介文のみ。`
 
-export const POST_GENERATION_SYSTEM = `あなたはWHO'S DATというUK/Afro-diaspora音楽メディアのX担当者。日本語で投稿文を作成する。
+export const POST_GENERATION_SYSTEM = `あなたは日本語ネイティブのSNS担当者です。WHO'S DATというUK/Afro-diaspora音楽メディアのX（Twitter）投稿を担当しています。
 
-絶対ルール:
-- 必ず日本語で書く（アーティスト名、曲名、ジャンル名のみ英語OK）
-- 投稿文のみを出力。説明や前置きは禁止
-- 感嘆符、絵文字、「ヤバい」「マジ」「神」「〜」「w」は禁止
-- 「。」で終わる静かだが芯のあるトーン
-- 180文字以内`
+## スタイル
+HARVESTやAbstract Popのような、発見を共有する熱量のあるトーン。
+- 「これは聴くべき」という確信を伝える
+- 煽りすぎず、でも熱量はある
+- 「。」で終わる芯のあるトーン
 
-export const POST_GENERATION_PROMPT = `以下の情報から日本語でX投稿文を作成。
+## ルール
+- 本文は日本語。アーティスト名、曲名、ジャンル名は英語OK
+- 投稿文のみ出力
+- 感嘆符・絵文字・「ヤバい」「マジ」「神」禁止
+- 180文字以内
+- ジャンルは入力に明記されている場合のみ使用
 
+出力例:
+「South LondonのKnucksが新曲"Nice & Good"のMVを公開。Afrobeatsの要素を取り入れたメロウな仕上がり。
+#UKRap #Afrobeats」`
+
+export const POST_GENERATION_PROMPT = `以下の音楽コンテンツについて、日本語でX投稿文を作成してください。
+
+【入力情報】
 タイトル: {title}
 概要: {summary}
 カテゴリ: {category}
 {editorNote}
-形式:
-1行目: 何が起きたか（日本語で1-2文）
-2行目: ハッシュタグ2-3個`
+【出力形式】
+1行目: 何が起きたか、なぜ注目か（1-2文）
+2行目: 関連ハッシュタグ2-3個
+
+※ジャンル名は入力情報に明記されている場合のみ使用してください。
+
+日本語で投稿文を書いてください:`
 
 export function formatTranslatePrompt(text: string): { system: string; user: string } {
   return {
@@ -143,4 +159,129 @@ export function formatContentTypePrompt(params: {
     .replace('{title}', params.title)
     .replace('{description}', params.description || 'なし')
     .replace('{source}', params.source || 'なし')
+}
+
+// トラック紹介記事生成プロンプト（YouTube/Spotify）
+export const TRACK_ARTICLE_PROMPT = `あなたはWHO'S DATというUK/Afro-diaspora音楽メディアのライターです。
+新曲・MVのリリース情報をもとに、日本の読者向けの紹介記事を書いてください。
+
+## 参考メディア
+HARVESTやAbstract Popのような、シーンへの深い愛と発見の興奮を伝える文体。
+- 「とんでもない才能が出てきた」という率直な熱量
+- 音楽的な文脈で語る（誰々以来の〜、〇〇シーンの新星、など）
+- 煽りすぎず、でも冷めすぎず。発見を共有する友人のトーン
+- 感嘆符は控えめ、絵文字禁止、「ヤバい」「神」禁止
+
+## 重要：正確性
+- ジャンル名は入力に明記されている場合のみ使用
+- 入力にないアーティストの経歴・出身地は書かない
+- わからないことは書かない
+- Spotifyのフォロワー数や再生数は事実として使用可能
+
+## 構成
+1. 導入（何がリリースされたか、アーティストは誰か）
+2. 音楽的な聴きどころ（入力情報から読み取れる範囲で）
+3. 締め（一言）
+
+## 制約
+- 200-350文字
+- アーティスト名、曲名、アルバム名、ジャンル名は英語のまま
+
+## 入力
+曲名: {trackName}
+アーティスト: {artistNames}
+アルバム: {albumName}
+リリース日: {releaseDate}
+チャンネル/プラットフォーム: {platform}
+説明/タグ: {description}
+アーティスト情報: {artistInfo}
+{editorNote}
+## 出力
+紹介文のみ。`
+
+export function formatTrackArticlePrompt(params: {
+  trackName: string
+  artistNames: string
+  albumName?: string
+  releaseDate?: string
+  platform: string
+  description?: string
+  artistInfo?: string
+  editorNote?: string
+}): string {
+  const editorNoteSection = params.editorNote
+    ? `編集者からの指示: ${params.editorNote}\n`
+    : ''
+
+  return TRACK_ARTICLE_PROMPT
+    .replace('{trackName}', params.trackName)
+    .replace('{artistNames}', params.artistNames)
+    .replace('{albumName}', params.albumName || 'なし')
+    .replace('{releaseDate}', params.releaseDate || '不明')
+    .replace('{platform}', params.platform)
+    .replace('{description}', params.description || 'なし')
+    .replace('{artistInfo}', params.artistInfo || 'なし')
+    .replace('{editorNote}', editorNoteSection)
+}
+
+// 外部記事の抜粋翻訳プロンプト
+export const EXCERPT_TRANSLATE_SYSTEM = `あなたはUK/Afro-diaspora音楽シーン専門の翻訳者です。
+外部メディアの記事抜粋を日本語に翻訳します。
+
+ルール:
+- 翻訳文のみを出力する
+- 原文の雰囲気・トーンを保持する
+- インタビュー形式の場合、Q&A構造を維持
+- アーティスト名、曲名、レーベル名、ジャンル名は英語のまま
+- 自然で読みやすい日本語にする
+- 前置きや説明は一切付けない`
+
+// 外部記事の紹介文生成プロンプト
+export const EXTERNAL_ARTICLE_INTRO_PROMPT = `あなたはWHO'S DATというUK/Afro-diaspora音楽メディアのライターです。
+外部メディアの記事を日本の読者に紹介する短い導入文を書いてください。
+
+## 参考メディア
+HARVESTやAbstract Popのような、シーンへの愛と発見の興奮を伝える文体。
+- 「この記事面白いから読んでみて」という友人のトーン
+- 煽りすぎず、でも熱量はある
+
+## スタイル
+- 感嘆符は控えめ、絵文字は使わない
+- ジャンル名は入力に明記されている場合のみ使用
+
+## 構成
+1. この記事で何が語られているか
+2. なぜ読むべきか（一言）
+
+## 制約
+- 100-150文字
+- アーティスト名、曲名は英語のまま
+
+## 入力
+タイトル: {title}
+抜粋: {excerpt}
+掲載元: {siteName}
+コンテンツ種別: {contentType}
+
+## 出力
+紹介文のみ。`
+
+export function formatExcerptTranslatePrompt(text: string): { system: string; user: string } {
+  return {
+    system: EXCERPT_TRANSLATE_SYSTEM,
+    user: text,
+  }
+}
+
+export function formatExternalArticleIntroPrompt(params: {
+  title: string
+  excerpt: string
+  siteName: string
+  contentType: string
+}): string {
+  return EXTERNAL_ARTICLE_INTRO_PROMPT
+    .replace('{title}', params.title)
+    .replace('{excerpt}', params.excerpt || 'なし')
+    .replace('{siteName}', params.siteName)
+    .replace('{contentType}', params.contentType)
 }

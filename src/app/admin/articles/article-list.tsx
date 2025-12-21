@@ -232,7 +232,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setAction(null)
   }
 
-  const processArticle = async (id: string, editorNote?: string) => {
+  const processArticle = async (id: string, editorNote?: string, forceRegenerate: boolean = false) => {
     setLoading(id)
     setProcessStatus({ id, step: 'translating', message: '生成中...' })
     try {
@@ -245,7 +245,11 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
         })
       }
 
-      const res = await fetch(`/api/articles/${id}/process`, { method: 'POST' })
+      const res = await fetch(`/api/articles/${id}/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceRegenerate }),
+      })
       const data = await res.json()
       if (data.error) {
         setProcessStatus({ id, step: 'error', message: data.error })
@@ -463,11 +467,16 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                         {article.title_original}
                       </p>
                     )}
-                    <div className="flex items-center gap-3 text-sm text-gray-400 mt-2">
+                    <div className="flex items-center gap-3 text-sm text-gray-400 mt-2 flex-wrap">
                       <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 rounded text-xs">
                         {CONTENT_TYPE_ICONS[article.content_type]} {CONTENT_TYPE_LABELS[article.content_type] || 'ニュース'}
                       </span>
-                      <span>{article.sources?.name} • {article.sources?.category}</span>
+                      {article.published_at && (
+                        <span className="text-gray-500" title="公開日">
+                          {new Date(article.published_at).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+                        </span>
+                      )}
+                      <span>{article.sources?.name}</span>
                       {(article.view_count !== null || article.like_count !== null) && (
                         <span className="flex items-center gap-2 text-gray-500">
                           {article.view_count !== null && (
@@ -636,7 +645,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                   {/* 記事を再生成ボタン（記事生成済みの場合） */}
                   {article.summary_ja && ['ready', 'published', 'posted'].includes(article.status) && (
                     <button
-                      onClick={() => processArticle(article.id, inlineNotes[article.id])}
+                      onClick={() => processArticle(article.id, inlineNotes[article.id], true)}
                       disabled={loading === article.id}
                       className="px-3 py-1.5 text-sm bg-purple-800 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
                     >
@@ -647,10 +656,10 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                     </button>
                   )}
 
-                  {/* X投稿文を再生成ボタン */}
+                  {/* X投稿文を再生成ボタン（記事は再生成しない） */}
                   {xPost && ['ready', 'published', 'posted'].includes(article.status) && (
                     <button
-                      onClick={() => processArticle(article.id, inlineNotes[article.id])}
+                      onClick={() => processArticle(article.id, inlineNotes[article.id], false)}
                       disabled={loading === article.id}
                       className="px-3 py-1.5 text-sm bg-indigo-800 hover:bg-indigo-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
                     >

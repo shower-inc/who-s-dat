@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { CONTENT_TYPE_LABELS, CONTENT_TYPES, ContentType } from '@/types/database'
 
 export const revalidate = 60
-export const dynamicParams = true // 静的生成されていないパラメータも許可
+export const dynamicParams = true
 
 export async function generateStaticParams() {
   return CONTENT_TYPES.map((type) => ({ type }))
@@ -42,24 +43,34 @@ export default async function CategoryPage({ params }: { params: Promise<{ type:
   const categoryLabel = CONTENT_TYPE_LABELS[type as ContentType]
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a1628]">
       {/* Header */}
-      <header className="border-b border-gray-800">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <Link href="/">
-            <h1 className="text-3xl font-bold text-white">WHO&apos;S DAT</h1>
-          </Link>
-          <p className="text-gray-400 mt-1">UK Afrobeats / Amapiano / Afro-diaspora Music</p>
+      <header className="border-b border-[#1e3a5f]/50">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="Who's Dat"
+                width={140}
+                height={40}
+                className="h-10 w-auto"
+              />
+            </Link>
+            <p className="text-[#b87aff]/80 text-sm hidden sm:block">
+              UK Afrobeats / Amapiano / Afro-diaspora
+            </p>
+          </div>
         </div>
       </header>
 
       {/* Category Navigation */}
-      <nav className="border-b border-gray-800 sticky top-0 bg-black/95 backdrop-blur z-10">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex gap-1 overflow-x-auto py-3 scrollbar-hide">
+      <nav className="border-b border-[#1e3a5f]/50 sticky top-0 bg-[#0a1628]/95 backdrop-blur-md z-10">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex gap-2 overflow-x-auto py-3 scrollbar-hide">
             <Link
               href="/"
-              className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white rounded-full whitespace-nowrap hover:bg-gray-800 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white rounded-full whitespace-nowrap hover:bg-[#1e3a5f] transition-colors border border-[#1e3a5f]/50"
             >
               All
             </Link>
@@ -69,8 +80,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ type:
                 href={`/category/${t}`}
                 className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
                   t === type
-                    ? 'text-white bg-gray-800'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    ? 'text-white bg-[#b87aff]'
+                    : 'text-gray-300 hover:text-white hover:bg-[#1e3a5f] border border-[#1e3a5f]/50'
                 }`}
               >
                 {CONTENT_TYPE_LABELS[t]}
@@ -81,39 +92,50 @@ export default async function CategoryPage({ params }: { params: Promise<{ type:
       </nav>
 
       {/* Category Title */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <h2 className="text-2xl font-bold text-white">{categoryLabel}</h2>
-        <p className="text-gray-500 text-sm mt-1">{articles?.length || 0} 件の記事</p>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex items-center gap-3">
+          <span className="w-1.5 h-8 bg-[#b87aff] rounded-full" />
+          <div>
+            <h1 className="text-3xl font-bold text-white">{categoryLabel}</h1>
+            <p className="text-gray-500 text-sm mt-1">{articles?.length || 0} 件の記事</p>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 pb-8">
+      <main className="max-w-6xl mx-auto px-4 pb-12">
         {articles && articles.length > 0 ? (
-          <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {articles.map((article) => (
-              <article key={article.id} className="border-b border-gray-800 pb-8">
-                <Link href={`/article/${article.id}`} className="group">
-                  <div className="flex gap-4">
+              <article key={article.id}>
+                <Link href={`/article/${article.id}`} className="group block">
+                  <div className="bg-[#152238] rounded-xl overflow-hidden border border-[#1e3a5f]/30 hover:border-[#b87aff]/30 transition-all hover:shadow-lg hover:shadow-[#b87aff]/5">
                     {article.thumbnail_url && (
-                      <div className="flex-shrink-0 w-32 h-20 bg-gray-800 rounded-lg overflow-hidden">
+                      <div className="aspect-video w-full overflow-hidden">
                         <img
                           src={article.thumbnail_url}
                           alt=""
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors line-clamp-2">
+                    <div className="p-4">
+                      <span className="inline-block px-2 py-0.5 bg-[#b87aff]/20 text-[#d4a5ff] text-xs font-medium rounded mb-2">
+                        {categoryLabel}
+                      </span>
+                      <h2 className="text-base font-semibold text-white group-hover:text-[#d4a5ff] transition-colors line-clamp-2">
                         {article.title_ja || article.title_original}
-                      </h3>
+                      </h2>
                       {article.summary_ja && (
                         <p className="mt-2 text-gray-400 text-sm line-clamp-2">
                           {article.summary_ja}
                         </p>
                       )}
-                      <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
-                        <span>{(article.sources as { name: string } | null)?.name}</span>
+                      <div className="mt-3 flex items-center gap-3 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <span className="w-1 h-1 bg-[#b87aff] rounded-full" />
+                          {(article.sources as { name: string } | null)?.name}
+                        </span>
                         {article.published_at && (
                           <span>{new Date(article.published_at).toLocaleDateString('ja-JP')}</span>
                         )}
@@ -125,9 +147,18 @@ export default async function CategoryPage({ params }: { params: Promise<{ type:
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <p className="text-gray-500">このカテゴリーにはまだ記事がありません</p>
-            <Link href="/" className="text-blue-400 hover:text-blue-300 mt-4 inline-block">
+          <div className="text-center py-24">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#152238] flex items-center justify-center">
+              <span className="text-3xl">🎵</span>
+            </div>
+            <p className="text-gray-400 text-lg">このカテゴリーにはまだ記事がありません</p>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-[#b87aff] hover:text-[#d4a5ff] mt-4 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
               トップページに戻る
             </Link>
           </div>
@@ -135,11 +166,20 @@ export default async function CategoryPage({ params }: { params: Promise<{ type:
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 mt-16">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <p className="text-gray-500 text-sm text-center">
-            WHO&apos;S DAT - Afro-diaspora Music Media
-          </p>
+      <footer className="border-t border-[#1e3a5f]/50 mt-16">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <Image
+              src="/logo.png"
+              alt="Who's Dat"
+              width={100}
+              height={28}
+              className="h-7 w-auto opacity-60"
+            />
+            <p className="text-gray-500 text-sm">
+              Afro-diaspora Music Media from Japan
+            </p>
+          </div>
         </div>
       </footer>
     </div>

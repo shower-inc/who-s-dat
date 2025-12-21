@@ -33,6 +33,13 @@ const recommendedChannels = [
   { handle: 'MajorLeagueDjz', name: 'Major League DJz', category: 'amapiano', type: 'artist' },
 ]
 
+// Recommended external article RSS feeds
+const recommendedRssFeeds = [
+  { name: 'Viper Magazine', url: 'https://vfrfriper.com/feed/', category: 'uk_afrobeats' },
+  { name: 'Clash Magazine', url: 'https://www.clashmusic.com/feed/', category: 'uk_afrobeats' },
+  { name: 'Dummy Mag', url: 'https://www.dummymag.com/feed/', category: 'uk_afrobeats' },
+]
+
 export default function NewSourcePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -45,7 +52,7 @@ export default function NewSourcePage() {
   } | null>(null)
   const [form, setForm] = useState({
     name: '',
-    type: 'youtube' as 'youtube' | 'rss',
+    type: 'youtube' as 'youtube' | 'rss' | 'rss_article',
     url: '',
     category_id: '',
     thumbnail_url: null as string | null,
@@ -179,7 +186,7 @@ export default function NewSourcePage() {
 
       {/* Recommended Channels */}
       <div className="mb-8">
-        <h2 className="text-lg font-medium text-white mb-4">おすすめチャンネル</h2>
+        <h2 className="text-lg font-medium text-white mb-4">おすすめチャンネル（YouTube）</h2>
 
         <div className="mb-4">
           <h3 className="text-sm text-gray-400 mb-2">メディア / プラットフォーム</h3>
@@ -213,6 +220,35 @@ export default function NewSourcePage() {
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Recommended External Article RSS */}
+      <div className="mb-8">
+        <h2 className="text-lg font-medium text-white mb-4">おすすめメディア（外部記事RSS）</h2>
+        <p className="text-sm text-gray-500 mb-3">
+          クリックするとフォームに入力されます。取得した記事は自動でスクレイピング・翻訳されます。
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {recommendedRssFeeds.map((feed) => (
+            <button
+              key={feed.name}
+              type="button"
+              onClick={() => {
+                const cat = categories.find((c) => c.slug === feed.category)
+                setForm((prev) => ({
+                  ...prev,
+                  name: feed.name,
+                  type: 'rss_article',
+                  url: feed.url,
+                  category_id: cat?.id || prev.category_id,
+                }))
+              }}
+              className="px-3 py-1.5 bg-green-900/50 hover:bg-green-800/50 text-sm text-white rounded-lg transition-colors"
+            >
+              {feed.name}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -264,12 +300,18 @@ export default function NewSourcePage() {
           </label>
           <select
             value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value as 'youtube' | 'rss' })}
+            onChange={(e) => setForm({ ...form, type: e.target.value as 'youtube' | 'rss' | 'rss_article' })}
             className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="youtube">YouTube</option>
-            <option value="rss">RSS</option>
+            <option value="rss">RSS（動画）</option>
+            <option value="rss_article">RSS（外部記事）</option>
           </select>
+          {form.type === 'rss_article' && (
+            <p className="text-xs text-gray-500 mt-1">
+              外部メディアの記事RSSです。取得した記事は自動で翻訳・紹介文生成されます。
+            </p>
+          )}
         </div>
 
         <div>
@@ -285,6 +327,8 @@ export default function NewSourcePage() {
             placeholder={
               form.type === 'youtube'
                 ? 'https://www.youtube.com/feeds/videos.xml?channel_id=...'
+                : form.type === 'rss_article'
+                ? 'https://vipermag.com/feed/'
                 : 'https://example.com/rss'
             }
           />

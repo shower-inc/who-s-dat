@@ -1,6 +1,9 @@
 import Parser from 'rss-parser'
 import crypto from 'crypto'
 import { getMultipleVideoDetails, extractVideoId, getChannelByHandle } from '../youtube/client'
+import { scrapeArticle, toContentBlocks } from '../scraper/article-scraper'
+import { processExternalArticle, detectContentType, generatePost } from '../llm/client'
+import type { ContentBlock, ContentType } from '@/types/database'
 
 const parser = new Parser({
   customFields: {
@@ -22,6 +25,19 @@ export interface FetchedArticle {
   published_at: string | null
   view_count: number | null
   like_count: number | null
+}
+
+// 外部記事用の拡張インターフェース
+export interface FetchedExternalArticle extends FetchedArticle {
+  title_ja: string
+  summary_ja: string
+  source_url: string
+  source_site_name: string
+  excerpt_original: string
+  excerpt_ja: string
+  content_blocks: ContentBlock[]
+  content_type: ContentType
+  post_content: string // X投稿文
 }
 
 function generateExternalId(link: string): string {
@@ -150,6 +166,88 @@ export async function fetchRssFeed(url: string): Promise<FetchedArticle[]> {
       like_count: videoDetails?.likeCount ?? null,
     })
   })
+
+  return articles
+}
+
+/**
+ * 外部記事RSS（rss_article）用のフェッチ処理
+ * RSSからURLを取得 → スクレイピング → 翻訳・紹介文生成
+ */
+export async function fetchExternalArticleRss(
+  rssUrl: string,
+  options?: { maxItems?: number }
+): Promise<FetchedExternalArticle[]> {
+  const maxItems = options?.maxItems ?? 5 // デフォルトは最新5件のみ処理（APIコスト削減）
+
+  const feed = await fetchWithRetry(rssUrl)
+  const articles: FetchedExternalArticle[] = []
+
+  // 最新のmaxItems件のみ処理
+  const itemsToProcess = feed.items.slice(0, maxItems)
+
+  for (const item of itemsToProcess) {
+    const link = item.link
+    if (!link) continue
+
+    try {
+      console.log(`[rss_article] Processing: ${link}`)
+
+      // 1. スクレイピング
+      const scraped = await scrapeArticle(link)
+
+      // 2. コンテンツ種別判定
+      const contentType = await detectContentType({
+        title: scraped.title,
+        description: scraped.excerpt,
+        source: scraped.siteName,
+      })
+
+      // 3. 翻訳・紹介文生成
+      const processed = await processExternalArticle({
+        title: scraped.title,
+        excerpt: scraped.excerpt,
+        siteName: scraped.siteName,
+        contentType,
+      })
+
+      // 4. X投稿文生成
+      const postContent = await generatePost({
+        title: processed.titleJa,
+        summary: processed.summaryJa,
+        category: contentType,
+      })
+
+      // 5. ContentBlocks生成
+      const contentBlocks = toContentBlocks(scraped)
+
+      articles.push({
+        external_id: generateExternalId(link),
+        title_original: scraped.title,
+        title_ja: processed.titleJa,
+        summary_original: scraped.excerpt,
+        summary_ja: processed.summaryJa,
+        link,
+        thumbnail_url: scraped.thumbnailUrl,
+        author: scraped.author,
+        published_at: scraped.publishedAt || item.isoDate || item.pubDate || null,
+        view_count: null,
+        like_count: null,
+        source_url: link,
+        source_site_name: scraped.siteName,
+        excerpt_original: scraped.excerpt,
+        excerpt_ja: processed.excerptJa,
+        content_blocks: contentBlocks,
+        content_type: contentType,
+        post_content: postContent,
+      })
+
+      console.log(`[rss_article] Done: ${processed.titleJa}`)
+    } catch (error) {
+      console.error(`[rss_article] Failed to process ${link}:`, error)
+      // 1件失敗しても続行
+    }
+  }
 
   return articles
 }

@@ -30,6 +30,24 @@ export async function POST(
 
   const source = article.sources as { name: string; category: string } | null
 
+  // リクエストボディから強制再生成フラグを取得
+  let forceRegenerate = false
+  try {
+    const body = await request.json()
+    forceRegenerate = body.forceRegenerate === true
+  } catch {
+    // bodyがない場合は無視
+  }
+
+  // デバッグログ
+  console.log('[process] Starting:', {
+    id,
+    status: article.status,
+    hasEditorNote: !!article.editor_note,
+    editorNote: article.editor_note?.substring(0, 50),
+    forceRegenerate,
+  })
+
   try {
     // Step 1: アーティスト情報を取得（DBキャッシュ or Web検索）
     const artist = await artistService.getOrFetchArtist(article.title_original)
@@ -60,12 +78,13 @@ export async function POST(
         .eq('id', id)
     }
 
-    // Step 2: 記事生成（本文が未生成の場合）
+    // Step 2: 記事生成（本文が未生成の場合、または強制再生成）
     // タイトルは翻訳済みでも、本文（summary_ja）がなければ生成する
     let title_ja = article.title_ja
     let summary_ja = article.summary_ja
 
-    if (!summary_ja) {
+    if (!summary_ja || forceRegenerate) {
+      console.log('[process] Generating article with editorNote:', article.editor_note)
       await supabase
         .from('articles')
         .update({ status: 'translating' })
@@ -104,6 +123,12 @@ export async function POST(
     // 日本語タイトルと概要を使用。なければ英語版を使用
     const titleForPost = title_ja || article.title_ja || article.title_original
     const summaryForPost = summary_ja || article.summary_ja || article.summary_original || ''
+
+    console.log('[process] Generating X post with:', {
+      titleForPost: titleForPost?.substring(0, 30),
+      summaryLength: summaryForPost?.length,
+      editorNote: article.editor_note,
+    })
 
     const postContent = await generatePost({
       title: titleForPost,
