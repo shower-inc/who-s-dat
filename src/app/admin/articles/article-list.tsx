@@ -124,6 +124,23 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
     setLoading(null)
   }
 
+  const publishArticle = async (id: string) => {
+    setLoading(id)
+    try {
+      const res = await fetch(`/api/articles/${id}/publish`, { method: 'POST' })
+      const data = await res.json()
+      if (data.error) {
+        alert(`Error: ${data.error}`)
+      } else {
+        alert('サイトに公開しました！')
+      }
+    } catch {
+      alert('公開に失敗しました')
+    }
+    router.refresh()
+    setLoading(null)
+  }
+
   if (articles.length === 0) {
     return (
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
@@ -187,14 +204,23 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
                     {loading === article.id ? '翻訳中...' : '翻訳する'}
                   </button>
                 )}
-                {article.status === 'translated' && (
-                  <button
-                    onClick={() => generatePost(article.id)}
-                    disabled={loading === article.id}
-                    className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded transition-colors"
-                  >
-                    {loading === article.id ? '生成中...' : '投稿文を生成'}
-                  </button>
+                {(article.status === 'translated' || article.status === 'ready') && (
+                  <>
+                    <button
+                      onClick={() => publishArticle(article.id)}
+                      disabled={loading === article.id}
+                      className="px-3 py-1.5 text-sm bg-teal-600 hover:bg-teal-700 disabled:bg-gray-600 text-white rounded transition-colors"
+                    >
+                      {loading === article.id ? '公開中...' : 'サイトに公開'}
+                    </button>
+                    <button
+                      onClick={() => generatePost(article.id)}
+                      disabled={loading === article.id}
+                      className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded transition-colors"
+                    >
+                      {loading === article.id ? '生成中...' : '投稿文を生成'}
+                    </button>
+                  </>
                 )}
                 {article.title_ja && (
                   <button
@@ -204,7 +230,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSource[] }) {
                     編集
                   </button>
                 )}
-                {article.status === 'pending' && (
+                {(article.status === 'pending' || article.status === 'translated' || article.status === 'ready') && (
                   <button
                     onClick={() => skipArticle(article.id)}
                     disabled={loading === article.id}
