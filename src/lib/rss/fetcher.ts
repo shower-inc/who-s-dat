@@ -64,19 +64,21 @@ export async function resolveYouTubeUrl(url: string): Promise<{ feedUrl: string;
     }
   }
 
-  // YouTube @handle URL
-  if (url.includes('youtube.com/@') || url.includes('/@')) {
-    const handle = url.match(/@([^\/\?]+)/)?.[1]
-    if (handle) {
-      const channel = await getChannelByHandle(handle)
-      if (channel) {
-        return {
-          feedUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.channelId}`,
-          wasConverted: true
-        }
-      }
-      throw new Error(`Channel not found for handle: @${handle}`)
+  // YouTube @handle URL - check for @ in the URL
+  const handleMatch = url.match(/@([a-zA-Z0-9_.-]+)/)
+  if (handleMatch) {
+    const handle = handleMatch[1]
+    if (!process.env.YOUTUBE_API_KEY) {
+      throw new Error(`YOUTUBE_API_KEY is not set. Cannot resolve @${handle}`)
     }
+    const channel = await getChannelByHandle(handle)
+    if (channel) {
+      return {
+        feedUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.channelId}`,
+        wasConverted: true
+      }
+    }
+    throw new Error(`Channel not found for handle: @${handle}. Please check if the handle is correct.`)
   }
 
   return { feedUrl: url, wasConverted: false }

@@ -62,6 +62,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setEditForm({
       title_ja: article.title_ja || '',
       summary_ja: article.summary_ja || '',
+      content_type: article.content_type || 'news',
     })
   }
 
@@ -252,6 +253,13 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     return xPosts.find(p => p.status !== 'posted') || xPosts.find(p => p.status === 'posted') || null
   }
 
+  // フィルタリング
+  const filteredArticles = articles.filter(article => {
+    if (contentTypeFilter !== 'all' && article.content_type !== contentTypeFilter) return false
+    if (statusFilter !== 'all' && article.status !== statusFilter) return false
+    return true
+  })
+
   if (articles.length === 0) {
     return (
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
@@ -262,7 +270,42 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
   return (
     <div className="space-y-4">
-      {articles.map((article) => {
+      {/* フィルター */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-wrap gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-400">カテゴリー:</label>
+          <select
+            value={contentTypeFilter}
+            onChange={(e) => setContentTypeFilter(e.target.value as ContentType | 'all')}
+            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">すべて</option>
+            {CONTENT_TYPES.map(type => (
+              <option key={type} value={type}>{CONTENT_TYPE_LABELS[type]}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-400">ステータス:</label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">すべて</option>
+            {Object.entries(statusLabels).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="text-sm text-gray-500 ml-auto">
+          {filteredArticles.length} / {articles.length} 件
+        </div>
+      </div>
+
+      {filteredArticles.map((article) => {
         const xPost = getXPost(article)
         const canTranslate = article.status === 'pending'
         const canGenerate = ['translated', 'published'].includes(article.status) && !xPost
@@ -297,6 +340,9 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                       </p>
                     )}
                     <div className="flex items-center gap-3 text-sm text-gray-400 mt-2">
+                      <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 rounded text-xs">
+                        {CONTENT_TYPE_LABELS[article.content_type] || 'ニュース'}
+                      </span>
                       <span>{article.sources?.name} • {article.sources?.category}</span>
                       {(article.view_count !== null || article.like_count !== null) && (
                         <span className="flex items-center gap-2 text-gray-500">
@@ -462,6 +508,21 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                 rows={4}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                カテゴリー
+              </label>
+              <select
+                value={editForm.content_type}
+                onChange={(e) => setEditForm({ ...editForm, content_type: e.target.value as ContentType })}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {CONTENT_TYPES.map(type => (
+                  <option key={type} value={type}>{CONTENT_TYPE_LABELS[type]}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex gap-3">

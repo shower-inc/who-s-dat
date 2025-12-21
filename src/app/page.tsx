@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { CONTENT_TYPE_LABELS, CONTENT_TYPES, ContentType } from '@/types/database'
 
 export const revalidate = 60 // 1分ごとに再検証
 
@@ -18,10 +19,35 @@ export default async function Home() {
       {/* Header */}
       <header className="border-b border-gray-800">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-white">WHO&apos;S DAT</h1>
+          <Link href="/">
+            <h1 className="text-3xl font-bold text-white">WHO&apos;S DAT</h1>
+          </Link>
           <p className="text-gray-400 mt-1">UK Afrobeats / Amapiano / Afro-diaspora Music</p>
         </div>
       </header>
+
+      {/* Category Navigation */}
+      <nav className="border-b border-gray-800 sticky top-0 bg-black/95 backdrop-blur z-10">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="flex gap-1 overflow-x-auto py-3 scrollbar-hide">
+            <Link
+              href="/"
+              className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-full whitespace-nowrap hover:bg-gray-700 transition-colors"
+            >
+              All
+            </Link>
+            {CONTENT_TYPES.map((type) => (
+              <Link
+                key={type}
+                href={`/category/${type}`}
+                className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white rounded-full whitespace-nowrap hover:bg-gray-800 transition-colors"
+              >
+                {CONTENT_TYPE_LABELS[type]}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </nav>
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">

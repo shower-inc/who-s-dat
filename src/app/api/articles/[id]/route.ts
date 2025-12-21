@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { CONTENT_TYPES, ContentType } from '@/types/database'
 
 export async function PATCH(
   request: Request,
@@ -9,11 +10,14 @@ export async function PATCH(
   const supabase = await createServiceClient()
   const body = await request.json()
 
-  const { title_ja, summary_ja } = body
+  const { title_ja, summary_ja, content_type } = body
 
   const updateData: Record<string, string> = {}
   if (title_ja !== undefined) updateData.title_ja = title_ja
   if (summary_ja !== undefined) updateData.summary_ja = summary_ja
+  if (content_type !== undefined && CONTENT_TYPES.includes(content_type as ContentType)) {
+    updateData.content_type = content_type
+  }
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
