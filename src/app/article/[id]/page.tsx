@@ -16,6 +16,7 @@ export default async function ArticlePage({
     .from('articles')
     .select('*, sources(name, url)')
     .eq('id', id)
+    .in('status', ['published', 'posted'])
     .single()
 
   if (!article) {
@@ -83,7 +84,7 @@ export default async function ArticlePage({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
           >
-            <span>View Original</span>
+            <span>元記事を見る</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -96,7 +97,7 @@ export default async function ArticlePage({
             href="/"
             className="text-gray-400 hover:text-white transition-colors"
           >
-            &larr; Back to articles
+            &larr; 記事一覧に戻る
           </Link>
         </div>
       </article>
