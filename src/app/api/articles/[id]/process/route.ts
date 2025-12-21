@@ -60,17 +60,18 @@ export async function POST(
         .eq('id', id)
     }
 
-    // Step 2: 記事生成（未生成の場合のみ）
+    // Step 2: 記事生成（本文が未生成の場合）
+    // タイトルは翻訳済みでも、本文（summary_ja）がなければ生成する
     let title_ja = article.title_ja
     let summary_ja = article.summary_ja
 
-    if (!title_ja) {
+    if (!summary_ja) {
       await supabase
         .from('articles')
         .update({ status: 'translating' })
         .eq('id', id)
 
-      const translated = await generateArticle({
+      const generated = await generateArticle({
         title: article.title_original,
         description: article.summary_original || '',
         channel: source?.name || 'Unknown',
@@ -78,8 +79,11 @@ export async function POST(
         editorNote: article.editor_note || undefined,
       })
 
-      title_ja = translated.title
-      summary_ja = translated.content
+      // タイトルが未翻訳なら翻訳結果を使う
+      if (!title_ja) {
+        title_ja = generated.title
+      }
+      summary_ja = generated.content
 
       await supabase
         .from('articles')

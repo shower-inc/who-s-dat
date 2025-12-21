@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { generatePost, detectContentType } from '@/lib/llm/client'
+import { generateArticle, generatePost, detectContentType } from '@/lib/llm/client'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -42,16 +42,37 @@ export async function POST(request: Request) {
           source: source?.name || 'Unknown',
         })
 
-        // DBに保存
         await supabase
           .from('articles')
           .update({ content_type: contentType })
           .eq('id', article.id)
       }
 
+      // 記事本文を生成（未生成の場合）
+      let summary_ja = article.summary_ja
+      let title_ja = article.title_ja
+      if (!summary_ja) {
+        const generated = await generateArticle({
+          title: article.title_original,
+          description: article.summary_original || '',
+          channel: source?.name || 'Unknown',
+          editorNote: article.editor_note || undefined,
+        })
+        summary_ja = generated.content
+        if (!title_ja) {
+          title_ja = generated.title
+        }
+
+        await supabase
+          .from('articles')
+          .update({ title_ja, summary_ja })
+          .eq('id', article.id)
+      }
+
+      // X投稿文生成
       const postContent = await generatePost({
-        title: article.title_ja || article.title_original,
-        summary: article.summary_ja || article.summary_original || '',
+        title: title_ja || article.title_original,
+        summary: summary_ja || article.summary_original || '',
         category: contentType,
         editorNote: article.editor_note || undefined,
       })
