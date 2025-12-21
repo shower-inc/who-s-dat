@@ -3,6 +3,8 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import Link from 'next/link'
 import { SourceList } from './source-list'
 
+export const dynamic = 'force-dynamic'
+
 export default async function SourcesPage() {
   const supabase = await createServiceClient()
 
