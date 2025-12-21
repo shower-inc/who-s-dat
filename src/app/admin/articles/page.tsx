@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { ArticleList } from './article-list'
 
 export default async function ArticlesPage() {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
 
   // 記事と関連する投稿、タグを一緒に取得
   const { data: articles } = await supabase

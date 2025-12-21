@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 
 export default async function PostsPage() {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
 
   // 投稿済みのもののみ取得（履歴表示）
   const { data: posts } = await supabase

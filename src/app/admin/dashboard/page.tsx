@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
 
   // 統計データ取得
   const { count: sourcesCount } = await supabase

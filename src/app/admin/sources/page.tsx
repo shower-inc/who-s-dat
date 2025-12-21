@@ -1,10 +1,10 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import Link from 'next/link'
 import { SourceList } from './source-list'
 
 export default async function SourcesPage() {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
 
   const { data: sources } = await supabase
     .from('sources')
