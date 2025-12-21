@@ -363,7 +363,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                       onClick={() => startEditPost(article, xPost)}
                       className="px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors"
                     >
-                      投稿文を編集
+                      X編集
                     </button>
                   )}
 
@@ -372,7 +372,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                       onClick={() => startEditArticle(article)}
                       className="px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors"
                     >
-                      翻訳を編集
+                      記事編集
                     </button>
                   )}
 
@@ -405,7 +405,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       {editingArticle && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold text-white mb-4">翻訳を編集</h3>
+            <h3 className="text-xl font-bold text-white mb-4">記事を編集</h3>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -454,7 +454,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       {editingPost && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-lg">
-            <h3 className="text-xl font-bold text-white mb-4">X投稿文を編集</h3>
+            <h3 className="text-xl font-bold text-white mb-4">X投稿を編集</h3>
             <textarea
               value={postContent}
               onChange={(e) => setPostContent(e.target.value)}
