@@ -61,7 +61,7 @@ export interface Database {
           author: string | null
           published_at: string | null
           fetched_at: string
-          status: 'pending' | 'translating' | 'translated' | 'generating' | 'ready' | 'scheduled' | 'posted' | 'skipped' | 'error'
+          status: 'pending' | 'translating' | 'translated' | 'generating' | 'ready' | 'published' | 'scheduled' | 'posted' | 'skipped' | 'error'
           view_count: number | null
           like_count: number | null
           created_at: string
