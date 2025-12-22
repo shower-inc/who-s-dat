@@ -14,7 +14,7 @@ export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   mv: 'MV',
   news: 'ニュース',
   interview: 'インタビュー',
-  live: 'ライブ',
+  live: 'パフォーマンス',
   feature: '特集',
   tune: 'TUNE',
 }

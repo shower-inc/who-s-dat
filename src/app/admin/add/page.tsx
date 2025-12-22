@@ -594,7 +594,7 @@ export default function AddPage() {
                 <option value="interview">インタビュー</option>
                 <option value="tune">楽曲紹介</option>
                 <option value="mv">MV</option>
-                <option value="live">ライブ</option>
+                <option value="live">パフォーマンス</option>
               </select>
             </div>
 

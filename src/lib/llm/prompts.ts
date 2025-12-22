@@ -153,7 +153,7 @@ export const CONTENT_TYPE_PROMPT = `以下の記事情報から、最も適切�
 - mv: ミュージックビデオ、Official Video、visualizer
 - news: 業界ニュース、契約、受賞、イベント告知
 - interview: インタビュー、対談、Q&A
-- live: ライブ映像、フェス、コンサート情報
+- live: パフォーマンス、ライブ映像、フェス、コンサート情報
 - feature: 特集記事、シーン解説、カルチャー解説
 - tune: 楽曲紹介、フリースタイル、プレイリスト
 
