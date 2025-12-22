@@ -10,14 +10,16 @@ export async function PATCH(
   const supabase = await createServiceClient()
   const body = await request.json()
 
-  const { title_ja, summary_ja, content_type } = body
+  const { title_ja, summary_ja, content_type, published_at, editor_note } = body
 
-  const updateData: Record<string, string> = {}
+  const updateData: Record<string, string | null> = {}
   if (title_ja !== undefined) updateData.title_ja = title_ja
   if (summary_ja !== undefined) updateData.summary_ja = summary_ja
   if (content_type !== undefined && CONTENT_TYPES.includes(content_type as ContentType)) {
     updateData.content_type = content_type
   }
+  if (published_at !== undefined) updateData.published_at = published_at
+  if (editor_note !== undefined) updateData.editor_note = editor_note
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 })

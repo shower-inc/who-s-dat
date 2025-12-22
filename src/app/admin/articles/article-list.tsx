@@ -71,7 +71,7 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
   // 記事編集モーダル
   const [editingArticle, setEditingArticle] = useState<ArticleWithSourceAndPosts | null>(null)
-  const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '', content_type: 'news' as ContentType })
+  const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '', content_type: 'news' as ContentType, published_at: '' })
 
   // 投稿文編集モーダル
   const [editingPost, setEditingPost] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)
@@ -179,10 +179,17 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
   const startEditArticle = (article: ArticleWithSourceAndPosts) => {
     setEditingArticle(article)
+    // 日付をdatetime-local用にフォーマット
+    let publishedAt = ''
+    if (article.published_at) {
+      const date = new Date(article.published_at)
+      publishedAt = date.toISOString().slice(0, 16) // "YYYY-MM-DDTHH:mm"
+    }
     setEditForm({
       title_ja: article.title_ja || '',
       summary_ja: article.summary_ja || '',
       content_type: article.content_type || 'news',
+      published_at: publishedAt,
     })
   }
 
@@ -191,10 +198,15 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setLoading(editingArticle.id)
     setAction('saving')
     try {
+      // published_atをISO形式に変換
+      const payload = {
+        ...editForm,
+        published_at: editForm.published_at ? new Date(editForm.published_at).toISOString() : null,
+      }
       const res = await fetch(`/api/articles/${editingArticle.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (data.error) {
@@ -804,19 +816,34 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
               </p>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                コンテンツ種別
-              </label>
-              <select
-                value={editForm.content_type}
-                onChange={(e) => setEditForm({ ...editForm, content_type: e.target.value as ContentType })}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {CONTENT_TYPES.map(type => (
-                  <option key={type} value={type}>{CONTENT_TYPE_ICONS[type]} {CONTENT_TYPE_LABELS[type]}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  コンテンツ種別
+                </label>
+                <select
+                  value={editForm.content_type}
+                  onChange={(e) => setEditForm({ ...editForm, content_type: e.target.value as ContentType })}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {CONTENT_TYPES.map(type => (
+                    <option key={type} value={type}>{CONTENT_TYPE_ICONS[type]} {CONTENT_TYPE_LABELS[type]}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  公開日時
+                </label>
+                <input
+                  type="datetime-local"
+                  value={editForm.published_at}
+                  onChange={(e) => setEditForm({ ...editForm, published_at: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">空欄の場合は現在日時が設定されます</p>
+              </div>
             </div>
 
             <div className="flex gap-3">
