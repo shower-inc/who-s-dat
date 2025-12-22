@@ -1,6 +1,9 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { generateArticle, generatePost, detectContentType } from '@/lib/llm/client'
 import { createArtistService } from '@/lib/artists/service'
+import { enrichArticleInfo, formatEnrichedInfo } from '@/lib/web/gemini-search'
+import { extractArtistName } from '@/lib/web/search'
+import { findRelatedArticles, formatRelatedArticles } from '@/lib/articles/related'
 import { NextResponse } from 'next/server'
 
 // Unified API: enrich → translate article → generate X post
@@ -53,6 +56,25 @@ export async function POST(
     const artist = await artistService.getOrFetchArtist(article.title_original)
     const artistInfo = artistService.formatArtistInfo(artist)
 
+    // Step 1.2: Gemini検索で追加情報を取得
+    const artistName = extractArtistName(article.title_original)
+    const enrichedInfo = await enrichArticleInfo({
+      title: article.title_original,
+      description: article.summary_original || undefined,
+      artistName: artistName || undefined,
+    })
+    const enrichedInfoText = formatEnrichedInfo(enrichedInfo)
+
+    console.log('[process] Enriched info:', enrichedInfoText?.slice(0, 200))
+
+    // Step 1.3: 関連記事を検索
+    const relatedArticles = await findRelatedArticles(supabase, id, article.title_original)
+    const relatedArticlesText = formatRelatedArticles(relatedArticles)
+
+    if (relatedArticles.length > 0) {
+      console.log(`[process] Found ${relatedArticles.length} related articles`)
+    }
+
     // Step 1.5: content_type自動判定（未設定の場合）
     let contentType = article.content_type
     if (!contentType || contentType === 'news') {
@@ -90,11 +112,14 @@ export async function POST(
         .update({ status: 'translating' })
         .eq('id', id)
 
+      // アーティスト情報と検索結果を結合
+      const combinedInfo = [artistInfo, enrichedInfoText, relatedArticlesText].filter(Boolean).join('\n\n')
+
       const generated = await generateArticle({
         title: article.title_original,
         description: article.summary_original || '',
         channel: source?.name || 'Unknown',
-        artistInfo,
+        artistInfo: combinedInfo,
         editorNote: article.editor_note || undefined,
       })
 
