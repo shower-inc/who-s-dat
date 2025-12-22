@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { generateArticle, generatePost, detectContentType } from '@/lib/llm/client'
+import { detectContentType } from '@/lib/llm/client'
+import { generateArticleWithGemini, generatePostWithGemini } from '@/lib/llm/gemini-client'
 import { createArtistService } from '@/lib/artists/service'
 import { enrichArticleInfo, formatEnrichedInfo } from '@/lib/web/gemini-search'
 import { extractArtistName } from '@/lib/web/search'
@@ -115,7 +116,7 @@ export async function POST(
       // アーティスト情報と検索結果を結合
       const combinedInfo = [artistInfo, enrichedInfoText, relatedArticlesText].filter(Boolean).join('\n\n')
 
-      const generated = await generateArticle({
+      const generated = await generateArticleWithGemini({
         title: article.title_original,
         description: article.summary_original || '',
         channel: source?.name || 'Unknown',
@@ -155,7 +156,7 @@ export async function POST(
       editorNote: article.editor_note,
     })
 
-    const postContent = await generatePost({
+    const postContent = await generatePostWithGemini({
       title: titleForPost,
       summary: summaryForPost,
       category: source?.category || 'music',
