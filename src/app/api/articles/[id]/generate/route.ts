@@ -43,6 +43,7 @@ export async function POST(
       title: article.title_ja || article.title_original,
       summary: article.summary_ja || article.summary_original || '',
       category: article.sources?.category || 'music',
+      articleUrl: article.link,
     })
 
     // 投稿を作成

@@ -216,6 +216,7 @@ export async function fetchExternalArticleRss(
         title: processed.titleJa,
         summary: processed.summaryJa,
         category: contentType,
+        articleUrl: link,
       })
 
       // 5. ContentBlocks生成

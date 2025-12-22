@@ -231,7 +231,7 @@ export default async function ArticlePage({
                     {article.excerpt_ja}
                   </p>
                   <footer className="mt-4 text-sm text-gray-500">
-                    — {article.source_site_name || 'Original Article'}より抜粋・翻訳
+                    — {article.source_site_name || 'Original Article'}より抜粋
                   </footer>
                 </blockquote>
               )}

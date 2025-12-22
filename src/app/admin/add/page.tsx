@@ -31,7 +31,7 @@ type TrackMetadata = {
   externalUrl: string
 }
 
-type TabType = 'track' | 'article'
+type TabType = 'track' | 'article' | 'original'
 
 export default function AddPage() {
   const router = useRouter()
@@ -45,6 +45,11 @@ export default function AddPage() {
   const [editorNote, setEditorNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  // オリジナル記事用
+  const [originalTitle, setOriginalTitle] = useState('')
+  const [originalContent, setOriginalContent] = useState('')
+  const [originalThumbnail, setOriginalThumbnail] = useState('')
+  const [contentType, setContentType] = useState<string>('feature')
 
   useEffect(() => {
     fetch('/api/admin/categories')
@@ -65,6 +70,10 @@ export default function AddPage() {
     setTrackMetadata(null)
     setEditorNote('')
     setError(null)
+    setOriginalTitle('')
+    setOriginalContent('')
+    setOriginalThumbnail('')
+    setContentType('feature')
   }
 
   // URLから記事をスクレイピング（プレビュー）
@@ -191,6 +200,42 @@ export default function AddPage() {
     }
   }
 
+  // オリジナル記事を保存
+  const handleOriginalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!originalTitle || !originalContent) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/admin/articles/original', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: originalTitle,
+          content: originalContent,
+          thumbnailUrl: originalThumbnail || undefined,
+          categoryId: selectedCategoryId || undefined,
+          contentType,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to save article')
+        setLoading(false)
+        return
+      }
+
+      router.push('/admin/articles')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save article')
+      setLoading(false)
+    }
+  }
+
   return (
     <DashboardLayout>
       <h1 className="text-3xl font-bold text-white mb-4">記事追加</h1>
@@ -218,6 +263,17 @@ export default function AddPage() {
           }`}
         >
           外部記事
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('original')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === 'original'
+              ? 'bg-purple-600 text-white'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+          }`}
+        >
+          オリジナル記事
         </button>
       </div>
 
@@ -472,6 +528,128 @@ export default function AddPage() {
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white font-medium rounded-lg transition-colors"
               >
                 {loading ? '処理中...' : '記事を保存（翻訳処理込み）'}
+              </button>
+            </div>
+          </form>
+        </>
+      )}
+
+      {/* オリジナル記事タブ */}
+      {activeTab === 'original' && (
+        <>
+          <p className="text-gray-400 mb-8">
+            自分で記事を書いて投稿できます。HTMLタグが使えます。
+          </p>
+
+          <form onSubmit={handleOriginalSubmit} className="max-w-3xl space-y-6">
+            {/* タイトル */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                タイトル
+              </label>
+              <input
+                type="text"
+                required
+                value={originalTitle}
+                onChange={(e) => setOriginalTitle(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="記事のタイトル"
+              />
+            </div>
+
+            {/* サムネイルURL */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                サムネイル画像URL（任意）
+              </label>
+              <input
+                type="url"
+                value={originalThumbnail}
+                onChange={(e) => setOriginalThumbnail(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="https://example.com/image.jpg"
+              />
+              {originalThumbnail && (
+                <img
+                  src={originalThumbnail}
+                  alt="プレビュー"
+                  className="mt-2 max-w-xs rounded-lg"
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
+              )}
+            </div>
+
+            {/* コンテンツ種別 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                コンテンツ種別
+              </label>
+              <select
+                value={contentType}
+                onChange={(e) => setContentType(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="feature">特集・コラム</option>
+                <option value="news">ニュース</option>
+                <option value="interview">インタビュー</option>
+                <option value="tune">楽曲紹介</option>
+                <option value="mv">MV</option>
+                <option value="live">ライブ</option>
+              </select>
+            </div>
+
+            {/* カテゴリ */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                カテゴリ
+              </label>
+              <select
+                value={selectedCategoryId}
+                onChange={(e) => setSelectedCategoryId(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">カテゴリなし</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 本文 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                本文（HTML可）
+              </label>
+              <textarea
+                required
+                value={originalContent}
+                onChange={(e) => setOriginalContent(e.target.value)}
+                rows={15}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+                placeholder="<p>記事の本文をここに書きます...</p>"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                使えるタグ: &lt;p&gt;, &lt;strong&gt;, &lt;a href=&quot;...&quot;&gt;, &lt;blockquote&gt; など
+              </p>
+            </div>
+
+            {/* エラー表示 */}
+            {error && (
+              <div className="p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
+                {error}
+              </div>
+            )}
+
+            {/* ボタン */}
+            <div className="flex gap-4">
+              <button
+                type="submit"
+                disabled={loading || !originalTitle || !originalContent}
+                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 text-white font-medium rounded-lg transition-colors"
+              >
+                {loading ? '保存中...' : '記事を保存'}
               </button>
             </div>
           </form>

@@ -40,6 +40,7 @@ export async function generatePost(params: {
   summary: string
   category: string
   editorNote?: string
+  articleUrl?: string
 }): Promise<string> {
   const client = getClient()
   const { system, user } = formatPostGenerationPrompt(params)
@@ -50,6 +51,7 @@ export async function generatePost(params: {
     summaryLength: params.summary?.length,
     category: params.category,
     hasEditorNote: !!params.editorNote,
+    hasArticleUrl: !!params.articleUrl,
   })
 
   const message = await client.messages.create({
@@ -64,7 +66,12 @@ export async function generatePost(params: {
     throw new Error('Unexpected response type')
   }
 
-  const result = content.text.trim()
+  let result = content.text.trim()
+
+  // URLがあれば末尾に追加
+  if (params.articleUrl) {
+    result = `${result}\n${params.articleUrl}`
+  }
 
   // デバッグ: 出力内容をログ
   console.log('[generatePost] Output:', result.substring(0, 100))

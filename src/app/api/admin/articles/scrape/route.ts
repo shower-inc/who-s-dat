@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
       title: processed.titleJa,
       summary: processed.summaryJa,
       category: contentType,
+      articleUrl: url,
     })
 
     // 投稿を保存

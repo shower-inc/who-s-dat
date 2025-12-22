@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
       summary: articleContent,
       category: 'tune',
       editorNote,
+      articleUrl: metadata.externalUrl,
     })
 
     // 記事を保存

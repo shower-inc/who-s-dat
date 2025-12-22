@@ -75,6 +75,7 @@ export async function POST(request: Request) {
         summary: summary_ja || article.summary_original || '',
         category: contentType,
         editorNote: article.editor_note || undefined,
+        articleUrl: article.link,
       })
 
       await supabase.from('posts').insert({
