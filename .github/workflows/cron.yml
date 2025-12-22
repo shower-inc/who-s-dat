@@ -1,11 +1,11 @@
 name: WHO'S DAT Auto Fetch & Translate
 
 on:
-  schedule:
-    # 3時間ごとに実行 (UTC: 0,3,6,9,12,15,18,21時)
-    # JST: 9,12,15,18,21,0,3,6時
-    - cron: '0 */3 * * *'
-  workflow_dispatch:  # 手動実行も可能
+  # schedule:
+  #   # 3時間ごとに実行 (UTC: 0,3,6,9,12,15,18,21時)
+  #   # JST: 9,12,15,18,21,0,3,6時
+  #   - cron: '0 */3 * * *'
+  workflow_dispatch:  # 手動実行のみ可能
 
 env:
   VERCEL_URL: ${{ secrets.VERCEL_URL }}
