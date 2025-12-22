@@ -3,6 +3,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { CONTENT_TYPE_LABELS, CONTENT_TYPES } from '@/types/database'
 
+// HTMLタグを除去する関数
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '')
+}
+
 export const revalidate = 60 // 1分ごとに再検証
 
 export default async function Home() {
@@ -100,7 +105,7 @@ export default async function Home() {
                       </h2>
                       {featuredArticle.summary_ja && (
                         <p className="mt-3 text-gray-300 line-clamp-2 max-w-3xl">
-                          {featuredArticle.summary_ja}
+                          {stripHtml(featuredArticle.summary_ja)}
                         </p>
                       )}
                       <div className="mt-4 flex items-center gap-4 text-sm text-gray-400">
@@ -147,7 +152,7 @@ export default async function Home() {
                             </h2>
                             {article.summary_ja && (
                               <p className="mt-2 text-gray-400 text-sm line-clamp-2">
-                                {article.summary_ja}
+                                {stripHtml(article.summary_ja)}
                               </p>
                             )}
                             <div className="mt-3 flex items-center gap-3 text-xs text-gray-500">

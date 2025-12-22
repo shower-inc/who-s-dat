@@ -4,6 +4,11 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { CONTENT_TYPE_LABELS, CONTENT_TYPES, ContentType } from '@/types/database'
 
+// HTMLタグを除去する関数
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '')
+}
+
 export const revalidate = 60
 export const dynamicParams = true
 
@@ -128,7 +133,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ type:
                       </h2>
                       {article.summary_ja && (
                         <p className="mt-2 text-gray-400 text-sm line-clamp-2">
-                          {article.summary_ja}
+                          {stripHtml(article.summary_ja)}
                         </p>
                       )}
                       <div className="mt-3 flex items-center gap-3 text-xs text-gray-500">
