@@ -172,6 +172,13 @@ export function createTagService(supabase: SupabaseClient<any>): TagService {
 
   // 記事のタグを一括設定（既存を置き換え）
   async function setArticleTags(articleId: string, tagIds: string[]): Promise<boolean> {
+    // 既存のタグを取得（カウント更新用）
+    const { data: oldTags } = await supabase
+      .from('article_tags')
+      .select('tag_id')
+      .eq('article_id', articleId)
+    const oldTagIds = oldTags?.map(t => t.tag_id) || []
+
     // 既存のタグを削除
     const { error: deleteError } = await supabase
       .from('article_tags')
@@ -183,19 +190,38 @@ export function createTagService(supabase: SupabaseClient<any>): TagService {
       return false
     }
 
-    // 新しいタグがなければ終了
-    if (tagIds.length === 0) return true
-
     // 新しいタグを追加
-    const { error: insertError } = await supabase
-      .from('article_tags')
-      .insert(tagIds.map(tagId => ({ article_id: articleId, tag_id: tagId })))
+    if (tagIds.length > 0) {
+      const { error: insertError } = await supabase
+        .from('article_tags')
+        .insert(tagIds.map(tagId => ({ article_id: articleId, tag_id: tagId })))
 
-    if (insertError) {
-      console.error('Failed to set article tags:', insertError)
-      return false
+      if (insertError) {
+        console.error('Failed to set article tags:', insertError)
+        return false
+      }
     }
+
+    // カウントを更新するタグを特定（追加されたタグと削除されたタグ）
+    const allAffectedTagIds = [...new Set([...oldTagIds, ...tagIds])]
+    await updateTagCounts(allAffectedTagIds)
+
     return true
+  }
+
+  // タグのarticle_countを更新
+  async function updateTagCounts(tagIds: string[]): Promise<void> {
+    for (const tagId of tagIds) {
+      const { count } = await supabase
+        .from('article_tags')
+        .select('*', { count: 'exact', head: true })
+        .eq('tag_id', tagId)
+
+      await supabase
+        .from('tags')
+        .update({ article_count: count || 0 })
+        .eq('id', tagId)
+    }
   }
 
   // タグに属する記事を取得
