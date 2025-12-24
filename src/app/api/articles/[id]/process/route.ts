@@ -1,13 +1,13 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { detectContentType } from '@/lib/llm/client'
-import { generateArticleWithGemini, generatePostWithGemini } from '@/lib/llm/gemini-client'
+import { generateArticleWithGemini } from '@/lib/llm/gemini-client'
 import { createArtistService } from '@/lib/artists/service'
 import { enrichArticleInfo, formatEnrichedInfo } from '@/lib/web/gemini-search'
 import { extractArtistName } from '@/lib/web/search'
 import { findRelatedArticles, formatRelatedArticles } from '@/lib/articles/related'
 import { NextResponse } from 'next/server'
 
-// Unified API: enrich → translate article → generate X post
+// Unified API: enrich → translate article
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -135,84 +135,21 @@ export async function POST(
         .update({
           title_ja,
           summary_ja,
-          status: 'translated',
+          status: 'ready',
         })
         .eq('id', id)
-    }
-
-    // Step 3: X投稿文生成
-    await supabase
-      .from('articles')
-      .update({ status: 'generating' })
-      .eq('id', id)
-
-    // 日本語タイトルと概要を使用。なければ英語版を使用
-    const titleForPost = title_ja || article.title_ja || article.title_original
-    const summaryForPost = summary_ja || article.summary_ja || article.summary_original || ''
-
-    console.log('[process] Generating X post with:', {
-      titleForPost: titleForPost?.substring(0, 30),
-      summaryLength: summaryForPost?.length,
-      editorNote: article.editor_note,
-    })
-
-    const postContent = await generatePostWithGemini({
-      title: titleForPost,
-      summary: summaryForPost,
-      category: source?.category || 'music',
-      editorNote: article.editor_note || undefined,
-    })
-
-    // Step 3: 投稿を作成（既存があれば更新）
-    const { data: existingPost } = await supabase
-      .from('posts')
-      .select('id')
-      .eq('article_id', id)
-      .eq('platform', 'x')
-      .single()
-
-    let post
-    if (existingPost) {
-      const { data, error } = await supabase
-        .from('posts')
-        .update({
-          content: postContent,
-          status: 'draft',
-        })
-        .eq('id', existingPost.id)
-        .select()
-        .single()
-      if (error) throw error
-      post = data
     } else {
-      const { data, error } = await supabase
-        .from('posts')
-        .insert({
-          article_id: id,
-          content: postContent,
-          content_style: 'casual',
-          llm_model: 'claude-3-haiku-20240307',
-          llm_prompt_version: 'v2',
-          platform: 'x',
-          status: 'draft',
-        })
-        .select()
-        .single()
-      if (error) throw error
-      post = data
+      // 既に翻訳済みの場合はreadyに
+      await supabase
+        .from('articles')
+        .update({ status: 'ready' })
+        .eq('id', id)
     }
-
-    // Step 4: 記事ステータスを準備完了に
-    await supabase
-      .from('articles')
-      .update({ status: 'ready' })
-      .eq('id', id)
 
     return NextResponse.json({
       success: true,
       title_ja,
       summary_ja,
-      post,
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'

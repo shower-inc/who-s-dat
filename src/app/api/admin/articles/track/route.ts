@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { extractVideoId, getVideoDetails } from '@/lib/youtube/client'
 import { extractSpotifyTrackId, getTrackDetails, getArtistFullProfile, searchArtist } from '@/lib/spotify/client'
-import { generateTrackArticle, generatePost } from '@/lib/llm/client'
+import { generateTrackArticle } from '@/lib/llm/client'
 import { researchArtist, formatResearchForPrompt } from '@/lib/research/artist-research'
 import { generateArtistLinksHtml, type ArtistLinks } from '@/lib/embed/social-card'
 
@@ -121,15 +121,6 @@ export async function POST(request: NextRequest) {
     // タイトル（曲名 - アーティスト名）
     const originalTitle = `${metadata.trackName} - ${metadata.artistNames}`
 
-    // X投稿文生成
-    const postContent = await generatePost({
-      title: originalTitle,
-      summary: articleContent,
-      category: 'tune',
-      editorNote,
-      articleUrl: metadata.externalUrl,
-    })
-
     // 記事を保存
     const { data: article, error: articleError } = await supabase
       .from('articles')
@@ -154,16 +145,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: articleError.message }, { status: 500 })
     }
 
-    // X投稿を保存
-    await supabase.from('posts').insert({
-      article_id: article.id,
-      content: postContent,
-      content_style: 'track',
-      platform: 'x',
-      status: 'draft',
-    })
-
-    return NextResponse.json({ article, post_content: postContent })
+    return NextResponse.json({ article })
   } catch (error) {
     console.error('Track article creation error:', error)
     return NextResponse.json({ error: 'Failed to create article' }, { status: 500 })

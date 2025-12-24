@@ -1,6 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { scrapeArticle, toContentBlocks } from '@/lib/scraper/article-scraper'
-import { processExternalArticle, detectContentType, generatePost } from '@/lib/llm/client'
+import { processExternalArticle, detectContentType } from '@/lib/llm/client'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 
@@ -120,26 +120,6 @@ export async function POST(request: NextRequest) {
       console.error('[scrape] Insert error:', insertError)
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
-
-    // X投稿文を生成
-    console.log('[scrape] Generating X post...')
-    const postContent = await generatePost({
-      title: processed.titleJa,
-      summary: processed.summaryJa,
-      category: contentType,
-      articleUrl: url,
-    })
-
-    // 投稿を保存
-    await supabase
-      .from('posts')
-      .insert({
-        article_id: article.id,
-        content: postContent,
-        content_style: 'external_article',
-        platform: 'x',
-        status: 'draft',
-      })
 
     console.log('[scrape] Done! Article ID:', article.id)
 

@@ -4,6 +4,7 @@ import { Article, Post, ContentType, CONTENT_TYPE_LABELS, CONTENT_TYPE_ICONS, CO
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
+import { ArticlePreview } from '@/components/ArticlePreview'
 
 // Tiptapはクライアントサイドのみで動作
 const RichTextEditor = dynamic(
@@ -72,14 +73,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   // 記事編集モーダル
   const [editingArticle, setEditingArticle] = useState<ArticleWithSourceAndPosts | null>(null)
   const [editForm, setEditForm] = useState({ title_ja: '', summary_ja: '', content_type: 'news' as ContentType, published_at: '' })
-
-  // 投稿文編集モーダル
-  const [editingPost, setEditingPost] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)
-  const [postContent, setPostContent] = useState('')
-
-  // X投稿作成モーダル
-  const [xPostModal, setXPostModal] = useState<{ article: ArticleWithSourceAndPosts; post: Post } | null>(null)
-  const [copied, setCopied] = useState(false)
 
   // インラインコメント入力
   const [inlineNotes, setInlineNotes] = useState<Record<string, string>>({})
@@ -222,35 +215,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setAction(null)
   }
 
-  const startEditPost = (article: ArticleWithSourceAndPosts, post: Post) => {
-    setEditingPost({ article, post })
-    setPostContent(post.content)
-  }
-
-  const savePost = async () => {
-    if (!editingPost) return
-    setLoading(editingPost.article.id)
-    setAction('saving')
-    try {
-      const res = await fetch(`/api/posts/${editingPost.post.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: postContent }),
-      })
-      const data = await res.json()
-      if (data.error) {
-        alert(`Error: ${data.error}`)
-      } else {
-        setEditingPost(null)
-      }
-    } catch {
-      alert('保存に失敗しました')
-    }
-    router.refresh()
-    setLoading(null)
-    setAction(null)
-  }
-
   const processArticle = async (id: string, editorNote?: string, forceRegenerate: boolean = false) => {
     setLoading(id)
     setProcessStatus({ id, step: 'translating', message: '生成中...' })
@@ -363,12 +327,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
     setAction(null)
   }
 
-  // 記事の投稿文を取得（X用で未投稿のもの優先、なければ投稿済み）
-  const getXPost = (article: ArticleWithSourceAndPosts): Post | null => {
-    const xPosts = article.posts.filter(p => p.platform === 'x')
-    return xPosts.find(p => p.status !== 'posted') || xPosts.find(p => p.status === 'posted') || null
-  }
-
   // フィルタリング
   const filteredArticles = articles.filter(article => {
     if (contentTypeFilter !== 'all' && article.content_type !== contentTypeFilter) return false
@@ -455,7 +413,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       </div>
 
       {filteredArticles.map((article) => {
-        const xPost = getXPost(article)
         const canProcess = ['pending', 'translated', 'published'].includes(article.status)
         const canPublish = ['translated', 'ready'].includes(article.status) && article.status !== 'published' && article.status !== 'posted'
         const canUnpublish = ['published', 'posted'].includes(article.status)
@@ -578,22 +535,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                   </div>
                 )}
 
-                {/* X投稿文表示 */}
-                {xPost && (
-                  <div className={`mt-4 p-3 rounded-lg ${xPost.status === 'posted' ? 'bg-green-900/30 border border-green-800' : 'bg-gray-800'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-400">X投稿文</span>
-                      {xPost.status === 'posted' && (
-                        <span className="px-2 py-0.5 text-xs bg-green-600 text-white rounded">
-                          X投稿済 {xPost.posted_at && `(${new Date(xPost.posted_at).toLocaleDateString('ja-JP')})`}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-200 whitespace-pre-wrap">{xPost.content}</p>
-                    <p className="text-xs text-gray-500 mt-2">{xPost.content.length} 文字</p>
-                  </div>
-                )}
-
                 {/* 進捗表示 */}
                 {processStatus?.id === article.id && (
                   <div className={`mt-3 p-2 rounded-lg flex items-center gap-2 text-sm ${
@@ -675,20 +616,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                     </button>
                   )}
 
-                  {/* X投稿文を再生成ボタン（記事は再生成しない） */}
-                  {xPost && ['ready', 'published', 'posted'].includes(article.status) && (
-                    <button
-                      onClick={() => processArticle(article.id, inlineNotes[article.id], false)}
-                      disabled={loading === article.id}
-                      className="px-3 py-1.5 text-sm bg-indigo-800 hover:bg-indigo-700 disabled:bg-gray-600 text-white rounded transition-colors flex items-center gap-2"
-                    >
-                      {isProcessing && (
-                        <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      )}
-                      {isProcessing ? processStatus?.message : 'X投稿文を再生成'}
-                    </button>
-                  )}
-
                   {canPublish && (
                     <button
                       onClick={() => publishArticle(article.id)}
@@ -706,28 +633,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
                       className="px-3 py-1.5 text-sm bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white rounded transition-colors"
                     >
                       {loading === article.id && action === 'unpublishing' ? '処理中...' : '非公開にする'}
-                    </button>
-                  )}
-
-                  {/* X投稿作成ボタン（テキストと画像を表示するモーダルを開く） */}
-                  {xPost && (
-                    <button
-                      onClick={() => {
-                        setXPostModal({ article, post: xPost })
-                        setCopied(false)
-                      }}
-                      className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-                    >
-                      X投稿作成
-                    </button>
-                  )}
-
-                  {xPost && (
-                    <button
-                      onClick={() => startEditPost(article, xPost)}
-                      className="px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors"
-                    >
-                      X編集
                     </button>
                   )}
 
@@ -854,38 +759,9 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
               >
                 {loading === editingArticle.id && action === 'saving' ? '保存中...' : '保存'}
               </button>
+              <ArticlePreview content={editForm.summary_ja} title={editForm.title_ja} />
               <button
                 onClick={() => setEditingArticle(null)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                キャンセル
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 投稿文編集モーダル */}
-      {editingPost && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-lg">
-            <h3 className="text-xl font-bold text-white mb-4">X投稿を編集</h3>
-            <textarea
-              value={postContent}
-              onChange={(e) => setPostContent(e.target.value)}
-              className="w-full h-40 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-sm text-gray-400 mt-2">{postContent.length} 文字</p>
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={savePost}
-                disabled={loading === editingPost.article.id}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                {loading === editingPost.article.id && action === 'saving' ? '保存中...' : '保存'}
-              </button>
-              <button
-                onClick={() => setEditingPost(null)}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
               >
                 キャンセル
@@ -979,96 +855,6 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
         </div>
       )}
 
-      {/* X投稿作成モーダル */}
-      {xPostModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold text-white mb-4">X投稿作成</h3>
-
-            {/* サムネイル画像 */}
-            {(() => {
-              const article = xPostModal.article
-              let thumbnailUrl = article.thumbnail_url
-              if (!thumbnailUrl && article.link) {
-                const match = article.link.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)
-                if (match) {
-                  thumbnailUrl = `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg`
-                }
-              }
-              return thumbnailUrl ? (
-                <div className="mb-4">
-                  <p className="text-sm text-gray-400 mb-2">画像（右クリックで保存してXに添付）</p>
-                  <img
-                    src={thumbnailUrl}
-                    alt="サムネイル"
-                    className="w-full max-w-md rounded-lg border border-gray-700"
-                  />
-                  <a
-                    href={thumbnailUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block mt-2 text-sm text-blue-400 hover:text-blue-300"
-                  >
-                    画像を別タブで開く
-                  </a>
-                </div>
-              ) : null
-            })()}
-
-            {/* 投稿テキスト */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-gray-400">投稿テキスト</p>
-                <button
-                  onClick={() => {
-                    const article = xPostModal.article
-                    const baseUrl = window.location.origin
-                    const articleLink = `${baseUrl}/article/${article.id}`
-                    const fullText = `${xPostModal.post.content}\n\n${articleLink}`
-                    navigator.clipboard.writeText(fullText)
-                    setCopied(true)
-                    setTimeout(() => setCopied(false), 2000)
-                  }}
-                  className={`px-3 py-1 text-sm rounded transition-colors ${
-                    copied
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-700 hover:bg-gray-600 text-white'
-                  }`}
-                >
-                  {copied ? 'コピーしました' : 'コピー'}
-                </button>
-              </div>
-              <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
-                <p className="text-white whitespace-pre-wrap">{xPostModal.post.content}</p>
-                <p className="text-blue-400 mt-2">{window.location.origin}/article/{xPostModal.article.id}</p>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">{xPostModal.post.content.length} 文字（リンク含まず）</p>
-            </div>
-
-            {/* Xで投稿ボタン */}
-            <div className="flex gap-3">
-              <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(xPostModal.post.content + '\n\n' + window.location.origin + '/article/' + xPostModal.article.id)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                Xで投稿（テキストのみ）
-              </a>
-              <button
-                onClick={() => setXPostModal(null)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                閉じる
-              </button>
-            </div>
-
-            <p className="text-xs text-gray-500 mt-4">
-              画像付きで投稿する場合：上の画像を保存 → Xアプリで投稿 → 画像を添付
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

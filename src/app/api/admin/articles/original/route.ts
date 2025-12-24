@@ -1,5 +1,4 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { generatePost } from '@/lib/llm/client'
 import { NextResponse } from 'next/server'
 import type { ContentType } from '@/types/database'
 
@@ -41,23 +40,6 @@ export async function POST(request: Request) {
       console.error('[original] Insert error:', articleError)
       return NextResponse.json({ error: articleError.message }, { status: 500 })
     }
-
-    // X投稿文を生成
-    const postContent = await generatePost({
-      title,
-      summary: content,
-      category: contentType || 'feature',
-      // オリジナル記事はURLなし（サイトのURLを後で追加するかも）
-    })
-
-    // 投稿を保存
-    await supabase.from('posts').insert({
-      article_id: article.id,
-      content: postContent,
-      content_style: 'original',
-      platform: 'x',
-      status: 'draft',
-    })
 
     return NextResponse.json({
       success: true,

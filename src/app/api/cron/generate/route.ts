@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { generateArticle, generatePost, detectContentType } from '@/lib/llm/client'
+import { generateArticle, detectContentType } from '@/lib/llm/client'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -68,25 +68,6 @@ export async function POST(request: Request) {
           .update({ title_ja, summary_ja })
           .eq('id', article.id)
       }
-
-      // X投稿文生成
-      const postContent = await generatePost({
-        title: title_ja || article.title_original,
-        summary: summary_ja || article.summary_original || '',
-        category: contentType,
-        editorNote: article.editor_note || undefined,
-        articleUrl: article.link,
-      })
-
-      await supabase.from('posts').insert({
-        article_id: article.id,
-        content: postContent,
-        content_style: 'casual',
-        llm_model: 'claude-3-haiku-20240307',
-        llm_prompt_version: 'v2',
-        platform: 'x',
-        status: 'draft',
-      })
 
       await supabase
         .from('articles')

@@ -325,7 +325,6 @@ export default function NewArticlePage() {
                 <li>• タイトルを日本語に翻訳</li>
                 <li>• 抜粋部分を日本語に翻訳</li>
                 <li>• 紹介文を生成（WHO'S DATスタイル）</li>
-                <li>• X投稿文を生成</li>
                 <li>• コンテンツ種別を自動判定</li>
               </ul>
             </div>
@@ -467,7 +466,6 @@ export default function NewArticlePage() {
                   <ul className="text-sm text-gray-500 mt-2 space-y-1">
                     <li>• タイトルを日本語に翻訳</li>
                     <li>• 紹介記事を生成（WHO'S DATスタイル）</li>
-                    <li>• X投稿文を生成</li>
                   </ul>
                 </div>
               </div>

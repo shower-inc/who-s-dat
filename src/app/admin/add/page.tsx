@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
+import { ArticlePreview } from '@/components/ArticlePreview'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
@@ -49,6 +50,8 @@ export default function AddPage() {
   const [originalTitle, setOriginalTitle] = useState('')
   const [originalContent, setOriginalContent] = useState('')
   const [originalThumbnail, setOriginalThumbnail] = useState('')
+  const [thumbnailUploading, setThumbnailUploading] = useState(false)
+  const [thumbnailSize, setThumbnailSize] = useState<{ width: number; height: number } | null>(null)
   const [contentType, setContentType] = useState<string>('feature')
   // 埋め込みURL変換用
   const [embedUrl, setEmbedUrl] = useState('')
@@ -76,8 +79,47 @@ export default function AddPage() {
     setOriginalTitle('')
     setOriginalContent('')
     setOriginalThumbnail('')
+    setThumbnailSize(null)
     setContentType('feature')
     setEmbedUrl('')
+  }
+
+  // サムネイル画像アップロード
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setThumbnailUploading(true)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'アップロードに失敗しました')
+        return
+      }
+
+      setOriginalThumbnail(data.url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'アップロードに失敗しました')
+    } finally {
+      setThumbnailUploading(false)
+    }
+  }
+
+  // 画像サイズ取得
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget
+    setThumbnailSize({ width: img.naturalWidth, height: img.naturalHeight })
   }
 
   // TikTok/Instagram/YouTube URLを埋め込みコードに変換
@@ -426,7 +468,6 @@ export default function AddPage() {
                   <ul className="text-sm text-gray-500 mt-2 space-y-1">
                     <li>• タイトルを日本語に翻訳</li>
                     <li>• 紹介記事を生成（WHO&apos;S DATスタイル）</li>
-                    <li>• X投稿文を生成</li>
                   </ul>
                 </div>
               </div>
@@ -548,7 +589,6 @@ export default function AddPage() {
                     <li>• タイトルを日本語に翻訳</li>
                     <li>• 抜粋部分を日本語に翻訳</li>
                     <li>• 紹介文を生成（WHO&apos;S DATスタイル）</li>
-                    <li>• X投稿文を生成</li>
                     <li>• コンテンツ種別を自動判定</li>
                   </ul>
                 </div>
@@ -592,26 +632,91 @@ export default function AddPage() {
               />
             </div>
 
-            {/* サムネイルURL */}
+            {/* サムネイル */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                サムネイル画像URL（任意）
+                サムネイル画像（任意）
               </label>
-              <input
-                type="url"
-                value={originalThumbnail}
-                onChange={(e) => setOriginalThumbnail(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="https://example.com/image.jpg"
-              />
-              {originalThumbnail && (
-                <img
-                  src={originalThumbnail}
-                  alt="プレビュー"
-                  className="mt-2 max-w-xs rounded-lg"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                />
-              )}
+
+              {/* アップロードエリア */}
+              <div className="flex gap-4 items-start">
+                <div className="flex-1">
+                  <label className="block w-full p-4 bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={handleThumbnailUpload}
+                      disabled={thumbnailUploading}
+                      className="hidden"
+                    />
+                    <div className="text-center">
+                      {thumbnailUploading ? (
+                        <div className="flex items-center justify-center gap-2 text-gray-400">
+                          <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          アップロード中...
+                        </div>
+                      ) : (
+                        <>
+                          <svg className="w-8 h-8 mx-auto text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-sm text-gray-400">
+                            クリックして画像をアップロード
+                          </span>
+                          <p className="text-xs text-gray-500 mt-1">
+                            JPEG, PNG, WebP, GIF（最大5MB）
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </label>
+
+                  {/* URL直接入力 */}
+                  <div className="mt-2">
+                    <input
+                      type="url"
+                      value={originalThumbnail}
+                      onChange={(e) => {
+                        setOriginalThumbnail(e.target.value)
+                        setThumbnailSize(null)
+                      }}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      placeholder="または画像URLを直接入力"
+                    />
+                  </div>
+                </div>
+
+                {/* プレビュー */}
+                {originalThumbnail && (
+                  <div className="flex-shrink-0">
+                    <img
+                      src={originalThumbnail}
+                      alt="プレビュー"
+                      className="w-40 h-auto rounded-lg border border-gray-700"
+                      onLoad={handleImageLoad}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                        setThumbnailSize(null)
+                      }}
+                    />
+                    {thumbnailSize && (
+                      <p className="text-xs text-gray-500 mt-1 text-center">
+                        {thumbnailSize.width} x {thumbnailSize.height}px
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOriginalThumbnail('')
+                        setThumbnailSize(null)
+                      }}
+                      className="mt-2 w-full px-2 py-1 text-xs bg-red-900 hover:bg-red-800 text-red-200 rounded transition-colors"
+                    >
+                      削除
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* コンテンツ種別 */}
@@ -713,6 +818,7 @@ export default function AddPage() {
               >
                 {loading ? '保存中...' : '記事を保存'}
               </button>
+              <ArticlePreview content={originalContent} title={originalTitle} />
             </div>
           </form>
         </>
