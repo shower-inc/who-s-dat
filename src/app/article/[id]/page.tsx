@@ -6,6 +6,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 import { Tag, Article, ContentBlock, CONTENT_TYPE_LABELS, CONTENT_TYPES } from '@/types/database'
+import { ShareButtons } from '@/components/ShareButtons'
+import { SocialLinks } from '@/components/SocialLinks'
 
 export const revalidate = 60
 
@@ -336,6 +338,14 @@ export default async function ArticlePage({
           )}
         </div>
 
+        {/* Share Buttons */}
+        <div className="mt-6">
+          <ShareButtons
+            url={`https://whosdat.jp/article/${id}`}
+            title={article.title_ja || article.title_original}
+          />
+        </div>
+
         {/* Related Articles */}
         {relatedArticles.length > 0 && (
           <div className="mt-12 pt-8 border-t border-[#1e3a5f]/50">
@@ -398,9 +408,12 @@ export default async function ArticlePage({
               height={28}
               className="h-7 w-auto opacity-60"
             />
-            <p className="text-gray-500 text-sm">
-              Afro-diaspora Music Media from Japan
-            </p>
+            <div className="flex items-center gap-6">
+              <SocialLinks />
+              <p className="text-gray-500 text-sm">
+                Afro-diaspora Music Media from Japan
+              </p>
+            </div>
           </div>
         </div>
       </footer>

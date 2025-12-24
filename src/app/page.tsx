@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import Image from 'next/image'
 import { CONTENT_TYPE_LABELS, CONTENT_TYPES, ContentType } from '@/types/database'
+import { SocialLinks } from '@/components/SocialLinks'
 
 // HTMLタグを除去する関数
 function stripHtml(html: string): string {
@@ -325,9 +326,12 @@ export default async function Home({ searchParams }: Props) {
               height={28}
               className="h-7 w-auto opacity-60"
             />
-            <p className="text-gray-500 text-sm">
-              Afro-diaspora Music Media from Japan
-            </p>
+            <div className="flex items-center gap-6">
+              <SocialLinks />
+              <p className="text-gray-500 text-sm">
+                Afro-diaspora Music Media from Japan
+              </p>
+            </div>
           </div>
         </div>
       </footer>
