@@ -4,9 +4,18 @@ import Image from 'next/image'
 import { CONTENT_TYPE_LABELS, CONTENT_TYPES, ContentType } from '@/types/database'
 import { SocialLinks } from '@/components/SocialLinks'
 
-// HTMLタグを除去する関数
+// HTMLタグを除去してエンティティをデコードする関数
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '')
+  // タグを除去
+  const withoutTags = html.replace(/<[^>]*>/g, '')
+  // HTMLエンティティをデコード
+  return withoutTags
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
 }
 
 const ITEMS_PER_PAGE = 12
