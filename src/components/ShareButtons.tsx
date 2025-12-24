@@ -10,7 +10,7 @@ type Props = {
 export function ShareButtons({ url, title }: Props) {
   const [copied, setCopied] = useState(false)
 
-  const shareText = `${title} | WHO'S DAT`
+  const shareText = title
   const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(shareText)}`
 
   const handleCopy = async () => {
