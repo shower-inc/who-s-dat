@@ -113,3 +113,72 @@ export function generateSocialCardHtml(data: SocialCardData): string {
   </a>
 </div>`
 }
+
+// アーティストリンクセクションのHTMLを生成
+export interface ArtistLinks {
+  artistName: string
+  spotify?: string
+  youtube?: string
+  instagram?: string
+  twitter?: string
+  tiktok?: string
+}
+
+export function generateArtistLinksHtml(links: ArtistLinks): string {
+  const cards: string[] = []
+
+  // Spotifyリンク
+  if (links.spotify) {
+    cards.push(generateSocialCardHtml({
+      platform: 'spotify',
+      username: links.artistName,
+      url: links.spotify,
+      displayName: links.artistName,
+    }))
+  }
+
+  // YouTubeチャンネル
+  if (links.youtube) {
+    cards.push(generateSocialCardHtml({
+      platform: 'youtube',
+      username: links.artistName,
+      url: links.youtube,
+      displayName: links.artistName,
+    }))
+  }
+
+  // Instagram
+  if (links.instagram) {
+    const parsed = parseSocialUrl(links.instagram)
+    if (parsed) {
+      parsed.displayName = links.artistName
+      cards.push(generateSocialCardHtml(parsed))
+    }
+  }
+
+  // Twitter/X
+  if (links.twitter) {
+    const parsed = parseSocialUrl(links.twitter)
+    if (parsed) {
+      parsed.displayName = links.artistName
+      cards.push(generateSocialCardHtml(parsed))
+    }
+  }
+
+  // TikTok
+  if (links.tiktok) {
+    const parsed = parseSocialUrl(links.tiktok)
+    if (parsed) {
+      parsed.displayName = links.artistName
+      cards.push(generateSocialCardHtml(parsed))
+    }
+  }
+
+  if (cards.length === 0) return ''
+
+  return `
+<div style="margin-top: 32px;">
+  <h3 style="font-size: 18px; font-weight: 600; color: #b87aff; margin-bottom: 16px;">Follow ${links.artistName}</h3>
+  ${cards.join('\n')}
+</div>`
+}

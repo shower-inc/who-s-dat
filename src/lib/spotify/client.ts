@@ -106,6 +106,14 @@ export async function getTrackDetails(trackId: string): Promise<SpotifyTrack | n
   }
 }
 
+export interface SpotifyArtistExternalLinks {
+  spotify: string
+  instagram?: string
+  twitter?: string
+  facebook?: string
+  wikipedia?: string
+}
+
 export interface SpotifyArtist {
   id: string
   name: string
@@ -113,6 +121,7 @@ export interface SpotifyArtist {
   followers: number
   images: { url: string; width: number; height: number }[]
   externalUrl: string
+  externalLinks?: SpotifyArtistExternalLinks
 }
 
 export async function getArtistDetails(artistId: string): Promise<SpotifyArtist | null> {
@@ -132,18 +141,58 @@ export async function getArtistDetails(artistId: string): Promise<SpotifyArtist 
 
     const data = await response.json()
 
+    const spotifyUrl = data.external_urls?.spotify || `https://open.spotify.com/artist/${data.id}`
+
     return {
       id: data.id,
       name: data.name,
       genres: data.genres || [],
       followers: data.followers?.total || 0,
       images: data.images || [],
-      externalUrl: data.external_urls?.spotify || `https://open.spotify.com/artist/${data.id}`,
+      externalUrl: spotifyUrl,
+      externalLinks: {
+        spotify: spotifyUrl,
+      },
     }
   } catch (error) {
     console.error('Spotify API error:', error)
     return null
   }
+}
+
+// アーティストのソーシャルリンクを取得（Spotify for Artists経由では取得不可なのでWeb経由で取得を試みる）
+export interface ArtistSocialLinks {
+  spotify: string
+  instagram?: string
+  twitter?: string
+  youtube?: string
+  tiktok?: string
+  facebook?: string
+}
+
+// アーティスト名から検索してSNSリンクを含む情報を取得
+export async function getArtistWithSocialLinks(artistName: string): Promise<{ artist: SpotifyArtist; socialLinks: ArtistSocialLinks } | null> {
+  const artist = await searchArtist(artistName)
+  if (!artist) return null
+
+  // Spotify URLは確定
+  const socialLinks: ArtistSocialLinks = {
+    spotify: artist.externalUrl,
+  }
+
+  return { artist, socialLinks }
+}
+
+// アーティストIDからSNSリンクを含む情報を取得
+export async function getArtistSocialLinksById(artistId: string): Promise<{ artist: SpotifyArtist; socialLinks: ArtistSocialLinks } | null> {
+  const artist = await getArtistDetails(artistId)
+  if (!artist) return null
+
+  const socialLinks: ArtistSocialLinks = {
+    spotify: artist.externalUrl,
+  }
+
+  return { artist, socialLinks }
 }
 
 // アーティストのトップトラックを取得

@@ -80,7 +80,7 @@ export default function AddPage() {
     setEmbedUrl('')
   }
 
-  // TikTok/Instagram URLを埋め込みコードに変換
+  // TikTok/Instagram/YouTube URLを埋め込みコードに変換
   const handleEmbedConvert = async () => {
     if (!embedUrl) return
     setEmbedLoading(true)
@@ -652,10 +652,10 @@ export default function AddPage() {
               </select>
             </div>
 
-            {/* TikTok/Instagram埋め込み */}
+            {/* メディア埋め込み */}
             <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                TikTok/Instagram動画を埋め込む
+                メディアを埋め込む
               </label>
               <div className="flex gap-2">
                 <input
@@ -663,7 +663,7 @@ export default function AddPage() {
                   value={embedUrl}
                   onChange={(e) => setEmbedUrl(e.target.value)}
                   className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                  placeholder="https://www.tiktok.com/@user/video/... または https://www.instagram.com/reel/..."
+                  placeholder="YouTube, Spotify, SoundCloud, TikTok, Instagram, Bandcamp..."
                 />
                 <button
                   type="button"
@@ -675,7 +675,7 @@ export default function AddPage() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                URLを入力すると本文に埋め込みコードが追加されます
+                YouTube, Spotify, SoundCloud, TikTok, Instagram, BandcampのURLを埋め込みコードに変換します
               </p>
             </div>
 

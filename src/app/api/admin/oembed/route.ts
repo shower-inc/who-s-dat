@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getEmbedHtml, isTikTokUrl, isInstagramUrl } from '@/lib/embed/oembed'
+import { getEmbedHtml, detectEmbedProvider } from '@/lib/embed/oembed'
 
 // URLからoEmbed HTMLを取得
 export async function POST(request: NextRequest) {
@@ -11,9 +11,10 @@ export async function POST(request: NextRequest) {
     }
 
     // サポートされているURLか確認
-    if (!isTikTokUrl(url) && !isInstagramUrl(url)) {
+    const provider = detectEmbedProvider(url)
+    if (!provider) {
       return NextResponse.json(
-        { error: 'Unsupported URL. Only TikTok and Instagram URLs are supported.' },
+        { error: 'Unsupported URL. Supported: TikTok, Instagram, YouTube, Spotify, SoundCloud, Bandcamp' },
         { status: 400 }
       )
     }

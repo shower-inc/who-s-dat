@@ -1,9 +1,10 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { extractVideoId, getVideoDetails } from '@/lib/youtube/client'
-import { extractSpotifyTrackId, getTrackDetails, getArtistFullProfile } from '@/lib/spotify/client'
-import { translateText, generateTrackArticle, generatePost } from '@/lib/llm/client'
+import { extractSpotifyTrackId, getTrackDetails, getArtistFullProfile, searchArtist } from '@/lib/spotify/client'
+import { generateTrackArticle, generatePost } from '@/lib/llm/client'
 import { researchArtist, formatResearchForPrompt } from '@/lib/research/artist-research'
+import { generateArtistLinksHtml, type ArtistLinks } from '@/lib/embed/social-card'
 
 interface TrackMetadata {
   platform: 'youtube' | 'spotify'
@@ -17,6 +18,7 @@ interface TrackMetadata {
   externalUrl: string
   videoId?: string // YouTube only
   spotifyArtistId?: string // Spotifyアーティストのリサーチ用
+  spotifyArtistUrl?: string // Spotifyアーティストページ
 }
 
 // URLからメタデータを取得
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
     console.log(`[track] Research complete. Spotify profile: ${research.spotifyProfile ? 'found' : 'not found'}, News: ${research.recentNews.length}, Interviews: ${research.interviews.length}`)
 
     // 記事生成（リサーチ情報を含める）
-    const articleContent = await generateTrackArticle({
+    let articleContent = await generateTrackArticle({
       trackName: metadata.trackName,
       artistNames: metadata.artistNames,
       albumName: metadata.albumName,
@@ -90,6 +92,31 @@ export async function POST(request: NextRequest) {
       artistInfo: researchText || metadata.artistInfo, // リサーチ結果を優先
       editorNote,
     })
+
+    // Spotifyアーティストリンクカードを記事末尾に追加
+    let spotifyArtistUrl = metadata.spotifyArtistUrl
+
+    // YouTube動画の場合、アーティスト名からSpotify検索
+    if (metadata.platform === 'youtube' && !spotifyArtistUrl) {
+      console.log(`[track] Searching Spotify for artist: ${metadata.artistNames}`)
+      const spotifyArtist = await searchArtist(metadata.artistNames)
+      if (spotifyArtist) {
+        spotifyArtistUrl = spotifyArtist.externalUrl
+        console.log(`[track] Found Spotify artist: ${spotifyArtist.name} (${spotifyArtistUrl})`)
+      }
+    }
+
+    // アーティストリンクカードを生成して追加
+    if (spotifyArtistUrl) {
+      const artistLinks: ArtistLinks = {
+        artistName: metadata.artistNames.split(',')[0].trim(), // 最初のアーティスト名
+        spotify: spotifyArtistUrl,
+      }
+      const linksHtml = generateArtistLinksHtml(artistLinks)
+      if (linksHtml) {
+        articleContent += linksHtml
+      }
+    }
 
     // タイトル（曲名 - アーティスト名）
     const originalTitle = `${metadata.trackName} - ${metadata.artistNames}`
@@ -217,6 +244,11 @@ async function fetchTrackMetadata(url: string): Promise<TrackMetadata | null> {
       }
     }
 
+    // Spotifyアーティストページへのリンクを生成
+    const spotifyArtistUrl = mainArtistId
+      ? `https://open.spotify.com/artist/${mainArtistId}`
+      : undefined
+
     return {
       platform: 'spotify',
       trackName: trackDetails.name,
@@ -227,6 +259,7 @@ async function fetchTrackMetadata(url: string): Promise<TrackMetadata | null> {
       thumbnailUrl: trackDetails.album.images[0]?.url,
       externalUrl: trackDetails.externalUrl,
       spotifyArtistId: mainArtistId, // リサーチで使用
+      spotifyArtistUrl, // アーティストリンクカード用
     }
   }
 
