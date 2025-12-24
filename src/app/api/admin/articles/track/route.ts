@@ -91,9 +91,8 @@ export async function POST(request: NextRequest) {
       editorNote,
     })
 
-    // タイトル翻訳（曲名 - アーティスト名）
+    // タイトル（曲名 - アーティスト名）
     const originalTitle = `${metadata.trackName} - ${metadata.artistNames}`
-    const titleJa = await translateText(originalTitle)
 
     // X投稿文生成
     const postContent = await generatePost({
@@ -111,7 +110,7 @@ export async function POST(request: NextRequest) {
         source_id: null, // 手動追加
         external_id: metadata.videoId || `spotify_${Date.now()}`,
         title_original: originalTitle,
-        title_ja: titleJa,
+        title_ja: originalTitle,
         summary_original: metadata.description || '',
         summary_ja: articleContent,
         link: metadata.externalUrl,

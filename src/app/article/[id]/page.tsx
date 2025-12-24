@@ -8,6 +8,7 @@ import type { Metadata } from 'next'
 import { Tag, Article, ContentBlock, CONTENT_TYPE_LABELS, CONTENT_TYPES } from '@/types/database'
 import { ShareButtons } from '@/components/ShareButtons'
 import { SocialLinks } from '@/components/SocialLinks'
+import { EmbedScripts } from '@/components/EmbedScripts'
 
 export const revalidate = 60
 
@@ -285,21 +286,24 @@ export default async function ArticlePage({
             <>
               {article.summary_ja ? (
                 // HTMLコンテンツをレンダリング（リッチテキストエディターからの内容）
-                <div
-                  className="text-gray-300 leading-relaxed text-lg prose prose-invert prose-lg max-w-none
-                    prose-p:my-4 prose-p:leading-relaxed
-                    prose-a:text-blue-400 prose-a:hover:text-blue-300 prose-a:underline
-                    prose-strong:text-white prose-strong:font-bold
-                    prose-em:text-gray-200
-                    prose-headings:text-white prose-headings:font-bold
-                    prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4
-                    prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3
-                    prose-ul:my-4 prose-ul:list-disc prose-ul:pl-6
-                    prose-ol:my-4 prose-ol:list-decimal prose-ol:pl-6
-                    prose-li:my-2
-                    prose-blockquote:border-l-4 prose-blockquote:border-[#b87aff] prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-400"
-                  dangerouslySetInnerHTML={{ __html: article.summary_ja }}
-                />
+                <>
+                  <div
+                    className="text-gray-300 leading-relaxed text-lg prose prose-invert prose-lg max-w-none
+                      prose-p:my-4 prose-p:leading-relaxed
+                      prose-a:text-blue-400 prose-a:hover:text-blue-300 prose-a:underline
+                      prose-strong:text-white prose-strong:font-bold
+                      prose-em:text-gray-200
+                      prose-headings:text-white prose-headings:font-bold
+                      prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4
+                      prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3
+                      prose-ul:my-4 prose-ul:list-disc prose-ul:pl-6
+                      prose-ol:my-4 prose-ol:list-decimal prose-ol:pl-6
+                      prose-li:my-2
+                      prose-blockquote:border-l-4 prose-blockquote:border-[#b87aff] prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-400"
+                    dangerouslySetInnerHTML={{ __html: article.summary_ja }}
+                  />
+                  <EmbedScripts content={article.summary_ja} />
+                </>
               ) : article.summary_original ? (
                 <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">
                   {article.summary_original}

@@ -50,6 +50,9 @@ export default function AddPage() {
   const [originalContent, setOriginalContent] = useState('')
   const [originalThumbnail, setOriginalThumbnail] = useState('')
   const [contentType, setContentType] = useState<string>('feature')
+  // 埋め込みURL変換用
+  const [embedUrl, setEmbedUrl] = useState('')
+  const [embedLoading, setEmbedLoading] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/categories')
@@ -74,6 +77,38 @@ export default function AddPage() {
     setOriginalContent('')
     setOriginalThumbnail('')
     setContentType('feature')
+    setEmbedUrl('')
+  }
+
+  // TikTok/Instagram URLを埋め込みコードに変換
+  const handleEmbedConvert = async () => {
+    if (!embedUrl) return
+    setEmbedLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/admin/oembed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: embedUrl }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || '埋め込みコードの取得に失敗しました')
+        setEmbedLoading(false)
+        return
+      }
+
+      // 本文に埋め込みコードを追加
+      setOriginalContent(prev => prev + '\n\n' + data.html)
+      setEmbedUrl('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '埋め込みコードの取得に失敗しました')
+    } finally {
+      setEmbedLoading(false)
+    }
   }
 
   // URLから記事をスクレイピング（プレビュー）
@@ -615,6 +650,33 @@ export default function AddPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* TikTok/Instagram埋め込み */}
+            <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                TikTok/Instagram動画を埋め込む
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={embedUrl}
+                  onChange={(e) => setEmbedUrl(e.target.value)}
+                  className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  placeholder="https://www.tiktok.com/@user/video/... または https://www.instagram.com/reel/..."
+                />
+                <button
+                  type="button"
+                  onClick={handleEmbedConvert}
+                  disabled={!embedUrl || embedLoading}
+                  className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                >
+                  {embedLoading ? '変換中...' : '埋め込み追加'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                URLを入力すると本文に埋め込みコードが追加されます
+              </p>
             </div>
 
             {/* 本文 */}
