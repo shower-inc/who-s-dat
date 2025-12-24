@@ -44,7 +44,7 @@ export async function generateMetadata({
   const title = article.title_ja || article.title_original
   const description = article.summary_ja || ''
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://who-s-dat.vercel.app'
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://whosdat.jp'
   const hasImage = article.thumbnail_url || extractYouTubeVideoId(article.link || '')
   const ogImageUrl = hasImage ? `${baseUrl}/api/og/${id}` : null
 
