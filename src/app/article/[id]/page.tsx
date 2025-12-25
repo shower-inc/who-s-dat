@@ -10,6 +10,7 @@ import { ShareButtons } from '@/components/ShareButtons'
 import { SocialLinks } from '@/components/SocialLinks'
 import { EmbedScripts } from '@/components/EmbedScripts'
 import { ArticleContent } from '@/components/ArticleContent'
+import { SpotifyPlaylist } from '@/components/SpotifyPlaylist'
 
 export const revalidate = 60
 
@@ -387,6 +388,13 @@ export default async function ArticlePage({
             </div>
           </div>
         )}
+
+        {/* Spotify Playlist */}
+        <div className="mt-12 pt-8 border-t border-[#1e3a5f]/50">
+          <div className="bg-[#152238] rounded-xl p-5 border border-[#1e3a5f]/30">
+            <SpotifyPlaylist compact />
+          </div>
+        </div>
 
         {/* Back Link */}
         <div className="mt-8">

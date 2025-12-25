@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { CONTENT_TYPE_LABELS, CONTENT_TYPES, ContentType } from '@/types/database'
 import { SocialLinks } from '@/components/SocialLinks'
+import { SpotifyPlaylist } from '@/components/SpotifyPlaylist'
 
 // HTMLタグを除去してエンティティをデコードする関数
 function stripHtml(html: string): string {
@@ -324,8 +325,15 @@ export default async function Home({ searchParams }: Props) {
         )}
       </main>
 
+      {/* Spotify Playlist */}
+      <section className="max-w-6xl mx-auto px-4 py-12">
+        <div className="bg-[#152238] rounded-2xl p-6 border border-[#1e3a5f]/30">
+          <SpotifyPlaylist />
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="border-t border-[#1e3a5f]/50 mt-16">
+      <footer className="border-t border-[#1e3a5f]/50">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <Image
