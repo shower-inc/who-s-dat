@@ -18,29 +18,38 @@ type ArticleWithSourceAndPosts = Article & {
   article_tags?: { tag_id: string; tags: Tag }[]
 }
 
+// シンプルなステータス（公開待ち / 公開中 のみ）
 const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-900 text-yellow-300',
-  translating: 'bg-blue-900 text-blue-300',
-  translated: 'bg-purple-900 text-purple-300',
-  generating: 'bg-indigo-900 text-indigo-300',
-  ready: 'bg-green-900 text-green-300',
-  published: 'bg-teal-900 text-teal-300',
-  posted: 'bg-emerald-900 text-emerald-300',
-  skipped: 'bg-gray-700 text-gray-300',
-  error: 'bg-red-900 text-red-300',
+  pending: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
+  translating: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
+  translated: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
+  generating: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
+  ready: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
+  published: 'bg-green-500/20 text-green-400 border border-green-500/30',
+  posted: 'bg-green-500/20 text-green-400 border border-green-500/30',
+  skipped: 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
+  error: 'bg-red-500/20 text-red-400 border border-red-500/30',
 }
 
 const statusLabels: Record<string, string> = {
-  pending: '未処理',
-  translating: '翻訳中',
-  translated: '翻訳済',
-  generating: '生成中',
-  ready: '準備完了',
+  pending: '公開待ち',
+  translating: '公開待ち',
+  translated: '公開待ち',
+  generating: '公開待ち',
+  ready: '公開待ち',
   published: '公開中',
-  posted: 'X投稿済',
+  posted: '公開中',
   skipped: 'スキップ',
   error: 'エラー',
 }
+
+// フィルター用のシンプルなステータス
+const statusFilterOptions = [
+  { value: 'all', label: 'すべて' },
+  { value: 'unpublished', label: '公開待ち' },
+  { value: 'published', label: '公開中' },
+  { value: 'skipped', label: 'スキップ' },
+]
 
 function formatCount(count: number | null): string {
   if (count === null) return '-'
@@ -336,7 +345,20 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   // フィルタリング
   const filteredArticles = articles.filter(article => {
     if (contentTypeFilter !== 'all' && article.content_type !== contentTypeFilter) return false
-    if (statusFilter !== 'all' && article.status !== statusFilter) return false
+
+    // ステータスフィルター（unpublishedは公開待ち系をまとめて扱う）
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'unpublished') {
+        // 公開待ち = published/posted/skipped以外
+        if (['published', 'posted', 'skipped'].includes(article.status)) return false
+      } else if (statusFilter === 'published') {
+        // 公開中 = published または posted
+        if (!['published', 'posted'].includes(article.status)) return false
+      } else {
+        if (article.status !== statusFilter) return false
+      }
+    }
+
     if (categoryFilter !== 'all' && article.sources?.category !== categoryFilter) return false
     if (tagFilter !== 'all') {
       const articleTagIds = getArticleTags(article).map(t => t.id)
@@ -433,9 +455,8 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">すべて</option>
-              {Object.entries(statusLabels).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
+              {statusFilterOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
           </div>
