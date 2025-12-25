@@ -88,7 +88,7 @@ export default async function Home({ searchParams }: Props) {
     <div className="min-h-screen bg-[#0a1628]">
       {/* Header */}
       <header className="border-b border-[#1e3a5f]/50">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
               <Image
@@ -96,10 +96,10 @@ export default async function Home({ searchParams }: Props) {
                 alt="Who's Dat"
                 width={140}
                 height={40}
-                className="h-10 w-auto"
+                className="h-8 sm:h-10 w-auto"
               />
             </Link>
-            <p className="text-[#b87aff]/80 text-sm hidden sm:block">
+            <p className="text-[#b87aff]/80 text-xs sm:text-sm hidden sm:block">
               UK Afrobeats / Amapiano / Afro-diaspora
             </p>
           </div>
@@ -108,11 +108,11 @@ export default async function Home({ searchParams }: Props) {
 
       {/* Category Navigation */}
       <nav className="border-b border-[#1e3a5f]/50 sticky top-0 bg-[#0a1628]/95 backdrop-blur-md z-10">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex gap-2 overflow-x-auto py-3 scrollbar-hide">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4">
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto py-2.5 sm:py-3 scrollbar-hide -mx-3 px-3 sm:mx-0 sm:px-0">
             <Link
               href="/"
-              className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
                 !selectedType
                   ? 'text-white bg-[#b87aff] hover:bg-[#d4a5ff]'
                   : 'text-gray-300 hover:text-white hover:bg-[#1e3a5f] border border-[#1e3a5f]/50'
@@ -124,7 +124,7 @@ export default async function Home({ searchParams }: Props) {
               <Link
                 key={type}
                 href={createFilterUrl(type)}
-                className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
                   selectedType === type
                     ? 'text-white bg-[#b87aff] hover:bg-[#d4a5ff]'
                     : 'text-gray-300 hover:text-white hover:bg-[#1e3a5f] border border-[#1e3a5f]/50'
@@ -138,41 +138,41 @@ export default async function Home({ searchParams }: Props) {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
         {articles && articles.length > 0 ? (
-          <div className="space-y-10">
+          <div className="space-y-6 sm:space-y-10">
             {/* Featured Article (only on first page without filter) */}
             {featuredArticle && (
               <section>
                 <Link href={`/article/${featuredArticle.id}`} className="group block">
                   <div className="relative rounded-2xl overflow-hidden bg-[#152238] card-hover">
                     {featuredArticle.thumbnail_url ? (
-                      <div className="aspect-[21/9] w-full">
+                      <div className="aspect-[4/3] sm:aspect-video md:aspect-[21/9] w-full">
                         <img
                           src={featuredArticle.thumbnail_url}
                           alt=""
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/50 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/60 to-transparent" />
                       </div>
                     ) : (
-                      <div className="aspect-[21/9] w-full bg-gradient-to-br from-[#1e3a5f] to-[#0a1628]" />
+                      <div className="aspect-[4/3] sm:aspect-video md:aspect-[21/9] w-full bg-gradient-to-br from-[#1e3a5f] to-[#0a1628]" />
                     )}
-                    <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
                       {featuredArticle.content_type && (
-                        <span className="inline-block px-3 py-1 bg-[#b87aff] text-white text-xs font-semibold rounded-full mb-3">
+                        <span className="inline-block px-2.5 py-1 bg-[#b87aff] text-white text-xs font-semibold rounded-full mb-2 sm:mb-3">
                           {CONTENT_TYPE_LABELS[featuredArticle.content_type as keyof typeof CONTENT_TYPE_LABELS]}
                         </span>
                       )}
-                      <h2 className="text-2xl md:text-3xl font-bold text-white group-hover:text-[#d4a5ff] transition-colors line-clamp-2">
+                      <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-white group-hover:text-[#d4a5ff] transition-colors line-clamp-3 sm:line-clamp-2">
                         {featuredArticle.title_ja || featuredArticle.title_original}
                       </h2>
                       {featuredArticle.summary_ja && (
-                        <p className="mt-3 text-gray-300 line-clamp-2 max-w-3xl">
+                        <p className="hidden sm:block mt-3 text-gray-300 line-clamp-2 max-w-3xl text-sm md:text-base">
                           {stripHtml(featuredArticle.summary_ja)}
                         </p>
                       )}
-                      <div className="mt-4 flex items-center gap-4 text-sm text-gray-400">
+                      <div className="mt-2 sm:mt-4 flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-400">
                         <span>{(featuredArticle.sources as { name: string } | null)?.name}</span>
                         {featuredArticle.published_at && (
                           <span>{new Date(featuredArticle.published_at).toLocaleDateString('ja-JP')}</span>
@@ -186,24 +186,25 @@ export default async function Home({ searchParams }: Props) {
 
             {/* Section Title */}
             <section>
-              <h3 className="text-lg font-semibold text-[#b87aff] mb-6 flex items-center gap-2">
-                <span className="w-1 h-5 bg-[#b87aff] rounded-full" />
+              <h3 className="text-base sm:text-lg font-semibold text-[#b87aff] mb-4 sm:mb-6 flex items-center gap-2">
+                <span className="w-1 h-4 sm:h-5 bg-[#b87aff] rounded-full" />
                 {selectedType ? CONTENT_TYPE_LABELS[selectedType] : 'Latest'}
                 {totalCount && (
-                  <span className="text-sm font-normal text-gray-500 ml-2">
-                    ({totalCount} articles)
+                  <span className="text-xs sm:text-sm font-normal text-gray-500 ml-1 sm:ml-2">
+                    ({totalCount})
                   </span>
                 )}
               </h3>
 
               {/* Articles Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {displayArticles.map((article) => (
                   <article key={article.id}>
                     <Link href={`/article/${article.id}`} className="group block">
-                      <div className="bg-[#152238] rounded-xl overflow-hidden card-hover border border-[#1e3a5f]/30">
+                      {/* スマホ: 横並びレイアウト / タブレット以上: 縦並びカード */}
+                      <div className="bg-[#152238] rounded-xl overflow-hidden card-hover border border-[#1e3a5f]/30 flex sm:flex-col">
                         {article.thumbnail_url && (
-                          <div className="aspect-video w-full overflow-hidden">
+                          <div className="w-28 h-20 sm:w-full sm:h-auto sm:aspect-video flex-shrink-0 overflow-hidden">
                             <img
                               src={article.thumbnail_url}
                               alt=""
@@ -211,24 +212,24 @@ export default async function Home({ searchParams }: Props) {
                             />
                           </div>
                         )}
-                        <div className="p-4">
+                        <div className="p-3 sm:p-4 flex-1 min-w-0">
                           {article.content_type && (
-                            <span className="inline-block px-2 py-0.5 bg-[#b87aff]/20 text-[#d4a5ff] text-xs font-medium rounded mb-2">
+                            <span className="inline-block px-2 py-0.5 bg-[#b87aff]/20 text-[#d4a5ff] text-xs font-medium rounded mb-1.5 sm:mb-2">
                               {CONTENT_TYPE_LABELS[article.content_type as keyof typeof CONTENT_TYPE_LABELS]}
                             </span>
                           )}
-                          <h2 className="text-base font-semibold text-white group-hover:text-[#d4a5ff] transition-colors line-clamp-2">
+                          <h2 className="text-sm sm:text-base font-semibold text-white group-hover:text-[#d4a5ff] transition-colors line-clamp-2">
                             {article.title_ja || article.title_original}
                           </h2>
                           {article.summary_ja && (
-                            <p className="mt-2 text-gray-400 text-sm line-clamp-2">
+                            <p className="hidden sm:block mt-2 text-gray-400 text-sm line-clamp-2">
                               {stripHtml(article.summary_ja)}
                             </p>
                           )}
-                          <div className="mt-3 flex items-center gap-3 text-xs text-gray-500">
-                            <span>{(article.sources as { name: string } | null)?.name}</span>
+                          <div className="mt-1.5 sm:mt-3 flex items-center gap-2 sm:gap-3 text-xs text-gray-500">
+                            <span className="truncate">{(article.sources as { name: string } | null)?.name}</span>
                             {article.published_at && (
-                              <span>{new Date(article.published_at).toLocaleDateString('ja-JP')}</span>
+                              <span className="flex-shrink-0">{new Date(article.published_at).toLocaleDateString('ja-JP')}</span>
                             )}
                           </div>
                         </div>
@@ -240,18 +241,18 @@ export default async function Home({ searchParams }: Props) {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="mt-12 flex items-center justify-center gap-2">
+                <div className="mt-8 sm:mt-12 flex items-center justify-center gap-1 sm:gap-2">
                   {/* Previous */}
                   {currentPage > 1 ? (
                     <Link
                       href={createPageUrl(currentPage - 1)}
-                      className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-[#152238] hover:bg-[#1e3a5f] rounded-lg transition-colors"
+                      className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-300 hover:text-white bg-[#152238] hover:bg-[#1e3a5f] rounded-lg transition-colors"
                     >
-                      ← Prev
+                      ←
                     </Link>
                   ) : (
-                    <span className="px-4 py-2 text-sm font-medium text-gray-600 bg-[#152238]/50 rounded-lg cursor-not-allowed">
-                      ← Prev
+                    <span className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 bg-[#152238]/50 rounded-lg cursor-not-allowed">
+                      ←
                     </span>
                   )}
 
@@ -268,13 +269,13 @@ export default async function Home({ searchParams }: Props) {
                         // 省略記号を追加
                         const showEllipsis = index > 0 && page - arr[index - 1] > 1
                         return (
-                          <div key={page} className="flex items-center gap-1">
+                          <div key={page} className="flex items-center gap-0.5 sm:gap-1">
                             {showEllipsis && (
-                              <span className="px-2 text-gray-500">...</span>
+                              <span className="px-1 sm:px-2 text-gray-500 text-xs sm:text-sm">...</span>
                             )}
                             <Link
                               href={createPageUrl(page)}
-                              className={`w-10 h-10 flex items-center justify-center text-sm font-medium rounded-lg transition-colors ${
+                              className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-xs sm:text-sm font-medium rounded-lg transition-colors ${
                                 page === currentPage
                                   ? 'text-white bg-[#b87aff]'
                                   : 'text-gray-300 hover:text-white bg-[#152238] hover:bg-[#1e3a5f]'
@@ -291,13 +292,13 @@ export default async function Home({ searchParams }: Props) {
                   {currentPage < totalPages ? (
                     <Link
                       href={createPageUrl(currentPage + 1)}
-                      className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-[#152238] hover:bg-[#1e3a5f] rounded-lg transition-colors"
+                      className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-300 hover:text-white bg-[#152238] hover:bg-[#1e3a5f] rounded-lg transition-colors"
                     >
-                      Next →
+                      →
                     </Link>
                   ) : (
-                    <span className="px-4 py-2 text-sm font-medium text-gray-600 bg-[#152238]/50 rounded-lg cursor-not-allowed">
-                      Next →
+                    <span className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 bg-[#152238]/50 rounded-lg cursor-not-allowed">
+                      →
                     </span>
                   )}
                 </div>
@@ -326,26 +327,26 @@ export default async function Home({ searchParams }: Props) {
       </main>
 
       {/* Spotify Playlist */}
-      <section className="max-w-6xl mx-auto px-4 py-12">
-        <div className="bg-[#152238] rounded-2xl p-6 border border-[#1e3a5f]/30">
+      <section className="max-w-6xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
+        <div className="bg-[#152238] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#1e3a5f]/30">
           <SpotifyPlaylist />
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-[#1e3a5f]/50">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+          <div className="flex flex-col items-center gap-4">
             <Image
               src="/logo.png"
               alt="Who's Dat"
               width={100}
               height={28}
-              className="h-7 w-auto opacity-60"
+              className="h-6 sm:h-7 w-auto opacity-60"
             />
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
               <SocialLinks />
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 text-xs sm:text-sm text-center">
                 Afro-diaspora Music Media from Japan
               </p>
             </div>
