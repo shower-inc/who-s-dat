@@ -1,8 +1,10 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { scrapeArticle, toContentBlocks } from '@/lib/scraper/article-scraper'
-import { processExternalArticle, detectContentType } from '@/lib/llm/client'
+import { processExternalArticle, detectContentType, extractArtistNames } from '@/lib/llm/client'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { generateWhosdatPlaylistHtml, generateArtistLinksHtml, type ArtistLinks } from '@/lib/embed/social-card'
+import { searchArtist } from '@/lib/spotify/client'
 
 // URLからスクレイピングしてプレビューを返す
 export async function GET(request: NextRequest) {
@@ -91,6 +93,36 @@ export async function POST(request: NextRequest) {
     // ContentBlocksを生成
     const contentBlocks = toContentBlocks(scraped)
 
+    // アーティスト名を抽出してSpotifyリンクを取得
+    console.log('[scrape] Extracting artist names...')
+    let artistLinksHtml = ''
+    try {
+      const artistNames = await extractArtistNames({
+        title: scraped.title,
+        excerpt: scraped.excerpt,
+      })
+      console.log('[scrape] Found artists:', artistNames)
+
+      // 最初のアーティストのSpotifyリンクを取得
+      if (artistNames.length > 0) {
+        const mainArtist = artistNames[0]
+        const spotifyArtist = await searchArtist(mainArtist)
+        if (spotifyArtist) {
+          console.log(`[scrape] Found Spotify: ${spotifyArtist.name} (${spotifyArtist.externalUrl})`)
+          const artistLinks: ArtistLinks = {
+            artistName: spotifyArtist.name,
+            spotify: spotifyArtist.externalUrl,
+          }
+          artistLinksHtml = generateArtistLinksHtml(artistLinks)
+        }
+      }
+    } catch (error) {
+      console.error('[scrape] Artist extraction error:', error)
+    }
+
+    // 記事末尾にアーティストリンクとWHO'S DATプレイリストを追加
+    const summaryWithExtras = processed.summaryJa + artistLinksHtml + generateWhosdatPlaylistHtml()
+
     // 記事を保存
     const { data: article, error: insertError } = await supabase
       .from('articles')
@@ -99,7 +131,7 @@ export async function POST(request: NextRequest) {
         title_original: scraped.title,
         title_ja: processed.titleJa,
         summary_original: scraped.excerpt,
-        summary_ja: processed.summaryJa,
+        summary_ja: summaryWithExtras,
         link: url,
         thumbnail_url: scraped.thumbnailUrl,
         author: scraped.author,

@@ -66,6 +66,12 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [tagFilter, setTagFilter] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sortBy, setSortBy] = useState<'published_at' | 'created_at'>('published_at')
+
+  // ページネーション
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
 
   // カテゴリ一覧を記事から抽出
   const categories = [...new Set(articles.map(a => a.sources?.category).filter(Boolean))] as string[]
@@ -336,8 +342,34 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
       const articleTagIds = getArticleTags(article).map(t => t.id)
       if (!articleTagIds.includes(tagFilter)) return false
     }
+    // 検索クエリによるフィルタリング
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      const title = (article.title_ja || article.title_original || '').toLowerCase()
+      if (!title.includes(query)) return false
+    }
     return true
   })
+
+  // ソート
+  const sortedArticles = [...filteredArticles].sort((a, b) => {
+    if (sortBy === 'created_at') {
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    }
+    return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime()
+  })
+
+  // ページネーション
+  const totalPages = Math.ceil(sortedArticles.length / itemsPerPage)
+  const paginatedArticles = sortedArticles.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  // フィルター変更時にページをリセット
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [contentTypeFilter, statusFilter, categoryFilter, tagFilter, searchQuery, sortBy])
 
   if (articles.length === 0) {
     return (
@@ -349,70 +381,116 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
 
   return (
     <div className="space-y-4">
-      {/* フィルター */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-wrap gap-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-400">種別:</label>
-          <select
-            value={contentTypeFilter}
-            onChange={(e) => setContentTypeFilter(e.target.value as ContentType | 'all')}
-            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">すべて</option>
-            {CONTENT_TYPES.map(type => (
-              <option key={type} value={type}>{CONTENT_TYPE_ICONS[type]} {CONTENT_TYPE_LABELS[type]}</option>
-            ))}
-          </select>
+      {/* 検索・フィルター */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-4">
+        {/* 検索バー */}
+        <div className="flex gap-4">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="記事タイトルで検索..."
+              className="w-full px-4 py-2.5 pl-10 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500"
+            />
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-400">並び順:</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'published_at' | 'created_at')}
+              className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="published_at">公開日順</option>
+              <option value="created_at">追加日順</option>
+            </select>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-400">ステータス:</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">すべて</option>
-            {Object.entries(statusLabels).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
-          </select>
-        </div>
+        {/* フィルター */}
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-400">種別:</label>
+            <select
+              value={contentTypeFilter}
+              onChange={(e) => setContentTypeFilter(e.target.value as ContentType | 'all')}
+              className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">すべて</option>
+              {CONTENT_TYPES.map(type => (
+                <option key={type} value={type}>{CONTENT_TYPE_ICONS[type]} {CONTENT_TYPE_LABELS[type]}</option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-400">カテゴリ:</label>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">すべて</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-400">ステータス:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">すべて</option>
+              {Object.entries(statusLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-400">タグ:</label>
-          <select
-            value={tagFilter}
-            onChange={(e) => setTagFilter(e.target.value)}
-            className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">すべて</option>
-            {allTags.map(tag => (
-              <option key={tag.id} value={tag.id}>{tag.name} ({tag.article_count})</option>
-            ))}
-          </select>
-        </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-400">カテゴリ:</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">すべて</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
 
-        <div className="text-sm text-gray-500 ml-auto">
-          {filteredArticles.length} / {articles.length} 件
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-400">タグ:</label>
+            <select
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">すべて</option>
+              {allTags.map(tag => (
+                <option key={tag.id} value={tag.id}>{tag.name} ({tag.article_count})</option>
+              ))}
+            </select>
+          </div>
+
+          {/* フィルターリセット */}
+          {(contentTypeFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || tagFilter !== 'all' || searchQuery) && (
+            <button
+              onClick={() => {
+                setContentTypeFilter('all')
+                setStatusFilter('all')
+                setCategoryFilter('all')
+                setTagFilter('all')
+                setSearchQuery('')
+              }}
+              className="px-3 py-1.5 text-sm text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 rounded transition-colors"
+            >
+              リセット
+            </button>
+          )}
+
+          <div className="text-sm text-gray-500 ml-auto">
+            {filteredArticles.length} / {articles.length} 件
+          </div>
         </div>
       </div>
 
-      {filteredArticles.map((article) => {
+      {paginatedArticles.map((article) => {
         const canProcess = ['pending', 'translated', 'published'].includes(article.status)
         const canPublish = ['translated', 'ready'].includes(article.status) && article.status !== 'published' && article.status !== 'posted'
         const canUnpublish = ['published', 'posted'].includes(article.status)
@@ -688,6 +766,72 @@ export function ArticleList({ articles }: { articles: ArticleWithSourceAndPosts[
           </div>
         )
       })}
+
+      {/* ページネーション */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 py-4">
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+            className="px-3 py-2 text-sm bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-600 text-white rounded transition-colors"
+          >
+            最初
+          </button>
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-2 text-sm bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-600 text-white rounded transition-colors"
+          >
+            前へ
+          </button>
+
+          <div className="flex items-center gap-1">
+            {/* ページ番号ボタン */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => {
+                // 最初の2ページ、最後の2ページ、現在ページの前後1ページを表示
+                if (page <= 2) return true
+                if (page >= totalPages - 1) return true
+                if (Math.abs(page - currentPage) <= 1) return true
+                return false
+              })
+              .map((page, index, filteredPages) => {
+                // 省略記号を表示
+                const showEllipsis = index > 0 && page - filteredPages[index - 1] > 1
+                return (
+                  <span key={page} className="flex items-center">
+                    {showEllipsis && <span className="px-2 text-gray-500">...</span>}
+                    <button
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-[36px] px-3 py-2 text-sm rounded transition-colors ${
+                        currentPage === page
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-800 hover:bg-gray-700 text-white'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </span>
+                )
+              })}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 text-sm bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-600 text-white rounded transition-colors"
+          >
+            次へ
+          </button>
+          <button
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 text-sm bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-600 text-white rounded transition-colors"
+          >
+            最後
+          </button>
+        </div>
+      )}
 
       {/* 記事編集モーダル */}
       {editingArticle && (

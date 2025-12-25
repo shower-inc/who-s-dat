@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { ContentType } from '@/types/database'
+import { generateWhosdatPlaylistHtml } from '@/lib/embed/social-card'
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +17,9 @@ export async function POST(request: Request) {
 
     const supabase = await createServiceClient()
 
+    // 記事末尾にWHO'S DATプレイリストを追加
+    const contentWithPlaylist = content + generateWhosdatPlaylistHtml()
+
     // 記事を保存
     const { data: article, error: articleError } = await supabase
       .from('articles')
@@ -25,7 +29,7 @@ export async function POST(request: Request) {
         title_original: title,
         title_ja: title, // オリジナルなので同じ
         summary_original: content,
-        summary_ja: content, // オリジナルなので同じ
+        summary_ja: contentWithPlaylist, // プレイリスト付き
         link: '', // オリジナル記事はリンクなし
         thumbnail_url: thumbnailUrl || null,
         published_at: new Date().toISOString(),

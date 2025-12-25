@@ -4,7 +4,7 @@ import { extractVideoId, getVideoDetails } from '@/lib/youtube/client'
 import { extractSpotifyTrackId, getTrackDetails, getArtistFullProfile, searchArtist } from '@/lib/spotify/client'
 import { generateTrackArticle } from '@/lib/llm/client'
 import { researchArtist, formatResearchForPrompt } from '@/lib/research/artist-research'
-import { generateArtistLinksHtml, type ArtistLinks } from '@/lib/embed/social-card'
+import { generateArtistLinksHtml, generateWhosdatPlaylistHtml, type ArtistLinks } from '@/lib/embed/social-card'
 
 interface TrackMetadata {
   platform: 'youtube' | 'spotify'
@@ -117,6 +117,9 @@ export async function POST(request: NextRequest) {
         articleContent += linksHtml
       }
     }
+
+    // WHO'S DAT プレイリストを記事末尾に追加
+    articleContent += generateWhosdatPlaylistHtml()
 
     // タイトル（曲名 - アーティスト名）
     const originalTitle = `${metadata.trackName} - ${metadata.artistNames}`

@@ -258,3 +258,39 @@ export async function generateTrackArticle(params: {
 
   return content.text.trim()
 }
+
+// 記事タイトルからアーティスト名を抽出
+export async function extractArtistNames(params: {
+  title: string
+  excerpt?: string
+}): Promise<string[]> {
+  const client = getClient()
+
+  const prompt = `以下の音楽ニュース記事のタイトルと抜粋から、主要なアーティスト名（バンド名、ミュージシャン名）を抽出してください。
+複数いる場合はカンマ区切りで出力してください。アーティスト名のみを出力し、他の説明は不要です。
+アーティストが特定できない場合は「NONE」と出力してください。
+
+タイトル: ${params.title}
+${params.excerpt ? `抜粋: ${params.excerpt}` : ''}
+
+アーティスト名:`
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 128,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const content = message.content[0]
+  if (content.type !== 'text') {
+    return []
+  }
+
+  const result = content.text.trim()
+  if (result === 'NONE' || !result) {
+    return []
+  }
+
+  // カンマ区切りで分割し、各アーティスト名をトリム
+  return result.split(',').map(name => name.trim()).filter(name => name.length > 0)
+}
